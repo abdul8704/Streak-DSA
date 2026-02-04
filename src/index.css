@@ -2,6 +2,81 @@
 @tailwind components;
 @tailwind utilities;
 
-html, body, #root {
-  height: 100%;
+/* Define CSS Variables for Theming */
+@layer base {
+  :root {
+    /* Light Theme (Default) */
+    --bg-primary: #ffffff;
+    /* Main background (App) */
+    --bg-secondary: #f9fafb;
+    /* Sidebar / Dashboard background (gray-50) */
+    --bg-card: #ffffff;
+    /* Component cards */
+    --bg-hover: #f3f4f6;
+    /* Hover states */
+
+    --text-primary: #111827;
+    /* Main text (gray-900) */
+    --text-secondary: #6b7280;
+    /* Subtitles / Labels (gray-500) */
+    --text-accent: #4f46e5;
+    /* Interactive elements */
+
+    --border-color: #e5e7eb;
+    /* Borders (gray-200) */
+    --ring-color: #e5e7eb;
+
+    /* Chart / Accent Colors */
+    --color-easy: #00af9b;
+    --color-medium: #ffb800;
+    --color-hard: #ff2d55;
+  }
+
+  .dark {
+    /* Dark Theme */
+    --bg-primary: #0f172a;
+    /* Slate-900 */
+    --bg-secondary: #1e293b;
+    /* Slate-800 */
+    --bg-card: #1e293b;
+    /* Slate-800 or slightly lighter */
+    --bg-hover: #334155;
+    /* Slate-700 */
+
+    --text-primary: #f9fafb;
+    /* Gray-50 */
+    --text-secondary: #94a3b8;
+    /* Slate-400 */
+    --text-accent: #6366f1;
+    /* Indigo-500 */
+
+    --border-color: #334155;
+    /* Slate-700 */
+    --ring-color: #334155;
+
+    /* Adjust charts for dark mode if needed (brightness) */
+    --color-easy: #2dd4bf;
+    --color-medium: #fbbf24;
+    --color-hard: #f87171;
+  }
+
+  /* Optional: "Midnight" or specific high contrast theme */
+  .midnight {
+    --bg-primary: #000000;
+    --bg-secondary: #111111;
+    --bg-card: #111111;
+    --bg-hover: #222222;
+
+    --text-primary: #ffffff;
+    --text-secondary: #a3a3a3;
+    --text-accent: #00e5ff;
+
+    --border-color: #333333;
+    --ring-color: #333333;
+  }
+
+  /* Apply base styles using variables */
+  body {
+    @apply bg-[var(--bg-primary)] text-[var(--text-primary)] transition-colors duration-200;
+  }
 }

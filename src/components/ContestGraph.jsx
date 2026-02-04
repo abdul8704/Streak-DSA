@@ -14,26 +14,32 @@ const data = [
 
 const ContestGraph = () => {
     return (
-        <div className="bg-white p-6 rounded-xl shadow-sm h-full flex flex-col">
-            <h2 className="text-lg font-bold mb-4 text-gray-700">Contest Ratings</h2>
+        <div className="bg-card p-6 rounded-xl shadow-sm border border-border h-full flex flex-col transition-colors">
+            <h2 className="text-lg font-bold mb-4 text-primary">Contest Ratings</h2>
             <div className="flex-1 w-full">
                 <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={data}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-color)" />
                         <XAxis
                             dataKey="date"
                             axisLine={false}
                             tickLine={false}
-                            tick={{ fontSize: 12, fill: '#9ca3af' }}
+                            tick={{ fontSize: 12, fill: 'var(--text-secondary)' }}
                         />
                         <YAxis
                             axisLine={false}
                             tickLine={false}
-                            tick={{ fontSize: 12, fill: '#9ca3af' }}
+                            tick={{ fontSize: 12, fill: 'var(--text-secondary)' }}
                             domain={['auto', 'auto']}
                         />
                         <Tooltip
-                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                            contentStyle={{
+                                borderRadius: '8px',
+                                border: '1px solid var(--border-color)',
+                                backgroundColor: 'var(--bg-card)',
+                                color: 'var(--text-primary)',
+                                boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
+                            }}
                         />
                         <Legend wrapperStyle={{ paddingTop: '10px' }} />
                         <Line type="monotone" dataKey="leetcode" stroke="#fbbf24" strokeWidth={2} name="LeetCode" dot={false} />

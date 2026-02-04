@@ -22,39 +22,45 @@ const SolvedGraph = () => {
     const [data, setData] = useState([]);
 
     useEffect(() => {
-        // TODO: Replace sample data with API call
         setData(sampleData);
     }, []);
 
     return (
-        <div className="bg-white p-6 rounded-xl shadow-sm h-full flex flex-col">
-            <h2 className="text-lg font-bold mb-4 text-gray-700">Activity (Last 14 Days)</h2>
+        <div className="bg-card p-6 rounded-xl shadow-sm border border-border h-full flex flex-col transition-colors">
+            <h2 className="text-lg font-bold mb-4 text-primary">Activity (Last 14 Days)</h2>
             <div className="flex-1 w-full min-h-[px]">
                 <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={data}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-color)" />
                         <XAxis
                             dataKey="date"
                             axisLine={false}
                             tickLine={false}
-                            tick={{ fontSize: 12, fill: '#9ca3af' }}
+                            tick={{ fontSize: 12, fill: 'var(--text-secondary)' }}
                             interval={2}
                         />
                         <YAxis
                             axisLine={false}
                             tickLine={false}
-                            tick={{ fontSize: 12, fill: '#9ca3af' }}
+                            tick={{ fontSize: 12, fill: 'var(--text-secondary)' }}
                         />
                         <Tooltip
-                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                            contentStyle={{
+                                borderRadius: '8px',
+                                border: '1px solid var(--border-color)',
+                                backgroundColor: 'var(--bg-card)',
+                                color: 'var(--text-primary)',
+                                boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
+                            }}
+                            itemStyle={{ color: 'var(--text-primary)' }}
                         />
                         <Line
                             type="monotone"
                             dataKey="solved"
-                            stroke="#4f46e5"
+                            stroke="var(--text-accent)"
                             strokeWidth={3}
-                            dot={{ r: 4, strokeWidth: 2, fill: '#fff' }}
-                            activeDot={{ r: 6 }}
+                            dot={{ r: 4, strokeWidth: 2, fill: 'var(--bg-card)', stroke: 'var(--text-accent)' }}
+                            activeDot={{ r: 6, fill: 'var(--text-accent)' }}
                         />
                     </LineChart>
                 </ResponsiveContainer>

@@ -8,7 +8,7 @@ import StreakCalendar from './StreakCalendar';
 
 const Dashboard = () => {
     return (
-        <div className="h-full p-6 bg-gray-50 overflow-y-auto flex flex-col gap-6">
+        <div className="h-full p-6 bg-surface overflow-y-auto flex flex-col gap-6">
             {/* Top Section: Main Grid */}
             <div className="grid grid-cols-3 gap-6 flex-shrink-0">
 
