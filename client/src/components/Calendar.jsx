@@ -47,15 +47,13 @@ const Calendar = () => {
     }, []);
     console.log(calendarData)
     const getColor = (intensity) => {
-        if (intensity === -1) return 'bg-transparent';
+        if (intensity <= 0) return 'bg-gray-300 dark:bg-[#393939]';
+        if (intensity === 1) return 'bg-[#016620]';
+        if (intensity === 2 || intensity === 3) return 'bg-[#109932]';
+        if (intensity === 4 || intensity === 5) return 'bg-[#28C244]';
+        if (intensity >= 6) return 'bg-[#7FE18B]';
 
-        if (intensity === 0) return 'bg-gray-100 dark:bg-[#393939]';
-        if (intensity === 1) return 'bg-gray-300 dark:bg-[#016620]';
-        if (intensity === 2 || intensity === 3) return `bg-green-${intensity === 2 ? '300' : '400'} dark:bg-[#109932]`;
-        if (intensity === 4 || intensity === 5) return 'bg-green-500 dark:bg-[#28C244]';
-        if (intensity >= 6) return 'bg-green-600 dark:bg-[#7FE18B]';
-
-        return 'bg-gray-100 dark:bg-[#393939]'; // default fallback
+        return 'bg-gray-300 dark:bg-[#393939]'; // default fallback
     };
 
     return (
@@ -64,11 +62,11 @@ const Calendar = () => {
                 <h2 className="text-lg font-bold text-primary">Submission Calendar <span className="text-sm font-normal text-secondary ml-2">(Past Year)</span></h2>
                 <div className="flex items-center gap-2 text-xs text-secondary">
                     <span>Less</span>
-                    <div className="w-3 h-3 bg-gray-100 dark:bg-[#393939] rounded-sm"></div>
-                    <div className="w-3 h-3 bg-gray-300 dark:bg-[#016620] rounded-sm"></div>
-                    <div className="w-3 h-3 bg-green-300 dark:bg-[#109932] rounded-sm"></div>
-                    <div className="w-3 h-3 bg-green-500 dark:bg-[#28C244] rounded-sm"></div>
-                    <div className="w-3 h-3 bg-green-600 dark:bg-[#7FE18B] rounded-sm"></div>
+                    <div className="w-3 h-3 bg-gray-300 dark:bg-[#393939] rounded-sm"></div>
+                    <div className="w-3 h-3 bg-[#016620] rounded-sm"></div>
+                    <div className="w-3 h-3 bg-[#109932] rounded-sm"></div>
+                    <div className="w-3 h-3 bg-[#28C244] rounded-sm"></div>
+                    <div className="w-3 h-3 bg-[#7FE18B] rounded-sm"></div>
                     <span>More</span>
                 </div>
             </div>

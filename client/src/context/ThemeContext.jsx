@@ -19,6 +19,11 @@ export const ThemeProvider = ({ children }) => {
         root.classList.remove('light', 'dark', 'midnight');
         // Add new theme class
         root.classList.add(theme);
+
+        // If theme is midnight, also add dark class to trigger dark mode utilities
+        if (theme === 'midnight') {
+            root.classList.add('dark');
+        }
         // Save to local storage
         localStorage.setItem('app-theme', theme);
     }, [theme]);
