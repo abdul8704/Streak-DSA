@@ -48,13 +48,12 @@ const getLeetcodeDaily = async (username) => {
     return result;
 }
 
-const getLeetcodeAllData = async (username) => {
+const getLeetcodeAllData = async (username, leetcodeSession, csrfToken, targetCount = 2000) => {
     const query = Queries.getLeetcodeAll();
     // console.log(query);
-    const pageSize = 50; // safe batch size
+    const pageSize = 75; // safe batch size
     let offset = 0;
     let allSubmissions = [];
-    const targetCount = 1000; // Number of submissions to fetch
 
     while (allSubmissions.length < targetCount) {
         try {
@@ -68,8 +67,8 @@ const getLeetcodeAllData = async (username) => {
                     headers: {
                         "Content-Type": "application/json",
                         "Referer": `${LEETCODE_URL}`,
-                        "Cookie": `LEETCODE_SESSION=${process.env.LEETCODE_SESSION}; csrftoken=${process.env.CSRF_TOKEN}`,
-                        "x-csrftoken": process.env.CSRF_TOKEN
+                        "Cookie": `LEETCODE_SESSION=${leetcodeSession}; csrftoken=${csrfToken}`,
+                        "x-csrftoken": csrfToken
                     }
                 }
             );
@@ -219,7 +218,7 @@ const getUserSolvedCount = async (username) => {
 }
 
 const getLeetcodeDailyStats = async (username, period) => {
-    const rawData = await getLeetcodeAllData(username);
+    const rawData = await getLeetcodeDaily(username);
     const result = {};
 
     const parseDate = (dateStr) => new Date(dateStr);

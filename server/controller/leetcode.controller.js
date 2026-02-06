@@ -14,8 +14,8 @@ const getLeetcodeDaily = async (req, res, next) => {
 
 const getLeetcodeAllData = async (req, res, next) => {
     try {
-        const username = req.body.username;
-        const data = await leetcodeService.getLeetcodeAllData(username);
+        const { username, leetcode_session, csrf_token } = req.body;
+        const data = await leetcodeService.getLeetcodeAllData(username, leetcode_session, csrf_token);
         res.status(200).json(data);
     }
     catch (error) {

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import axios from 'axios';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const sampleData = [
@@ -22,7 +23,34 @@ const SolvedGraph = () => {
     const [data, setData] = useState([]);
 
     useEffect(() => {
-        setData(sampleData);
+        const fetchData = async () => {
+            try {
+                const response = await axios.post('http://localhost:5000/api/leetcode/daily', {
+                    username: "abdulaziz120"
+                });
+                const data = response.data;
+
+                const processedData = Object.entries(data).map(([dateStr, count]) => {
+                    const date = new Date(dateStr);
+                    // Format: "Jan 20"
+                    const month = date.toLocaleString('default', { month: 'short' });
+                    const day = date.getDate().toString().padStart(2, '0');
+                    return {
+                        date: `${month} ${day}`,
+                        solved: count,
+                        timestamp: date.getTime()
+                    };
+                })
+                    .sort((a, b) => a.timestamp - b.timestamp)
+                    .slice(-14); // Last 14 days
+
+                setData(processedData);
+            } catch (error) {
+                console.error("Error fetching graph data:", error);
+            }
+        };
+
+        fetchData();
     }, []);
 
     return (

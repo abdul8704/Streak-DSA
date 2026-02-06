@@ -1,19 +1,136 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import { ChevronLeft, ChevronRight, Zap, Trophy, Target, TrendingUp } from 'lucide-react';
 
 const StreakCalendar = () => {
     const [currentDate, setCurrentDate] = useState(new Date());
 
-    // Mock data for solved days
-    const solvedDays = new Set([1, 3, 4, 7, 8, 12, 14, 15, 16, 20, 22, 25, 28, 30]);
+    // State for solved days
+    const [solvedDays, setSolvedDays] = useState(new Set());
+    const [stats, setStats] = useState({
+        currentStreak: 0,
+        longestStreak: 0,
+        todaySolved: 0,
+        maxSolvedOneDay: 0
+    });
 
-    // Mock Stats
-    const stats = {
-        currentStreak: 4,
-        longestStreak: 12,
-        todaySolved: 2,
-        maxSolvedOneDay: 8
-    };
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const response = await axios.post('http://localhost:5000/api/leetcode/daily', {
+                    username: "abdulaziz120"
+                });
+                const data = response.data;
+
+                // Process solved days
+                const newSolvedDays = new Set();
+                let todayCount = 0;
+                let max = 0;
+
+                const parsedDates = []; // Store timestamps
+
+                Object.entries(data).forEach(([dateStr, count]) => {
+                    const date = new Date(dateStr);
+                    if (count > 0) {
+                        newSolvedDays.add(date.toDateString());
+                        parsedDates.push(date.getTime());
+                    }
+
+                    if (count > max) max = count;
+
+                    // check if today
+                    const today = new Date();
+                    if (date.getDate() === today.getDate() &&
+                        date.getMonth() === today.getMonth() &&
+                        date.getFullYear() === today.getFullYear()) {
+                        console.log(`Matched today: ${dateStr} with count ${count}`);
+                        todayCount = count;
+                    }
+                });
+
+                // Calculate Streaks
+                parsedDates.sort((a, b) => a - b); // Ascending
+
+                let currentStreak = 0;
+                let longestStreak = 0;
+                let tempStreak = 0;
+
+                if (parsedDates.length > 0) {
+                    // Longest Streak
+                    tempStreak = 1;
+                    longestStreak = 1;
+                    for (let i = 1; i < parsedDates.length; i++) {
+                        const prev = new Date(parsedDates[i - 1]);
+                        const curr = new Date(parsedDates[i]);
+
+                        // Check if consecutive (difference is approx 1 day)
+                        const diffTime = curr - prev;
+                        const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+                        // Note: If multiple submissions on same day, diffDays is 0. 
+                        // But we filtered distinct dates earlier? 
+                        // actually new Date(dateStr) from "6 Feb 2026" creates unique timestamps per day.
+
+                        if (diffDays === 1) {
+                            tempStreak++;
+                        } else if (diffDays > 1) {
+                            tempStreak = 1;
+                        }
+                        // If diffDays === 0 (same day), do nothing (streak continues effectively, but count doesn't increase)
+
+                        if (tempStreak > longestStreak) longestStreak = tempStreak;
+                    }
+
+                    // Current Streak
+                    const today = new Date();
+                    const yesterday = new Date(today);
+                    yesterday.setDate(yesterday.getDate() - 1);
+
+                    // Check if last available data point is today or yesterday
+                    const lastDateTimestamp = parsedDates[parsedDates.length - 1];
+                    const lastDate = new Date(lastDateTimestamp);
+
+                    const isToday = lastDate.getDate() === today.getDate() &&
+                        lastDate.getMonth() === today.getMonth() &&
+                        lastDate.getFullYear() === today.getFullYear();
+
+                    const isYesterday = lastDate.getDate() === yesterday.getDate() &&
+                        lastDate.getMonth() === yesterday.getMonth() &&
+                        lastDate.getFullYear() === yesterday.getFullYear();
+
+                    if (isToday || isYesterday) {
+                        currentStreak = 1;
+                        for (let i = parsedDates.length - 2; i >= 0; i--) {
+                            const curr = new Date(parsedDates[i + 1]);
+                            const prev = new Date(parsedDates[i]);
+                            const diff = Math.round((curr - prev) / (1000 * 60 * 60 * 24));
+                            if (diff === 1) {
+                                currentStreak++;
+                            } else if (diff > 1) {
+                                break;
+                            }
+                        }
+                    } else {
+                        currentStreak = 0;
+                    }
+                }
+
+                setSolvedDays(newSolvedDays);
+                setStats(prev => ({
+                    ...prev,
+                    currentStreak,
+                    longestStreak,
+                    todaySolved: todayCount,
+                    maxSolvedOneDay: max
+                }));
+
+            } catch (error) {
+                console.error("Error fetching streak data:", error);
+            }
+        };
+
+        fetchData();
+    }, []);
 
     const handlePrevMonth = () => {
         setCurrentDate(prev => {
@@ -53,7 +170,9 @@ const StreakCalendar = () => {
 
         // Days of month
         for (let d = 1; d <= days; d++) {
-            const isSolved = solvedDays.has(d);
+            const dateCheck = new Date(year, currentDate.getMonth(), d);
+            const isSolved = solvedDays.has(dateCheck.toDateString());
+
             const isToday = d === new Date().getDate() &&
                 currentDate.getMonth() === new Date().getMonth() &&
                 currentDate.getFullYear() === new Date().getFullYear();
@@ -64,7 +183,7 @@ const StreakCalendar = () => {
                     className={`h-8 w-8 flex items-center justify-center text-sm rounded-full cursor-pointer transition-all
                         ${isToday ? 'border-2 border-primary' : ''}
                         ${isSolved
-                            ? 'bg-orange-100 text-orange-600 font-bold dark:bg-orange-900/30 dark:text-orange-400'
+                            ? 'bg-green-100 text-green-600 font-bold dark:bg-green-900/30 dark:text-green-400'
                             : 'text-secondary hover:bg-card-hover'}
                     `}
                 >

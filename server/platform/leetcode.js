@@ -3,7 +3,7 @@ require('dotenv').config();
 const getLeetcodeDaily = () => {
     return `
         query recentAcSubmissions($username: String!) {
-            recentAcSubmissionList(username: $username, limit: 50) {
+            recentAcSubmissionList(username: $username, limit: 100) {
             id
             title
             titleSlug
