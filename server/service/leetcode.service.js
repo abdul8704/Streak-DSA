@@ -24,7 +24,28 @@ const getLeetcodeDaily = async (username) => {
         }
     );
 
-    return response.data.data.recentAcSubmissionList;
+    const recentSubmissions = response.data.data.recentAcSubmissionList;
+    const dateMap = {};
+
+    recentSubmissions.forEach(submission => {
+        const date = new Date(parseInt(submission.timestamp) * 1000);
+        const day = date.getDate();
+        const month = date.toLocaleString('default', { month: 'short' });
+        const year = date.getFullYear();
+        const dateKey = `${day} ${month} ${year}`;
+
+        if (!dateMap[dateKey]) {
+            dateMap[dateKey] = new Set();
+        }
+        dateMap[dateKey].add(submission.titleSlug);
+    });
+
+    const result = {};
+    for (const [date, problems] of Object.entries(dateMap)) {
+        result[date] = problems.size;
+    }
+
+    return result;
 }
 
 const getLeetcodeAllData = async (username) => {
@@ -76,7 +97,38 @@ const getLeetcodeAllData = async (username) => {
         }
     }
 
-    return allSubmissions.slice(0, targetCount);
+    const allSubmissionsSliced = allSubmissions.slice(0, targetCount);
+
+    // Transform to { date: count }
+    const dateMap = {};
+
+    // Note: getLeetcodeAll returns statusDisplay in string, we might want to filter only AC?
+    // But the user just said "do the same", and for getLeetcodeDaily it is "Recent AC Submissions".
+    // For general submissions we should probably filter for statusDisplay === 'Accepted'.
+    // Looking at the query in leetcode.js, it fetches statusDisplay.
+
+    allSubmissionsSliced.forEach(submission => {
+        // Only count accepted solutions to match "solved per day" logic generally expected
+        if (submission.statusDisplay === 'Accepted') {
+            const date = new Date(parseInt(submission.timestamp) * 1000);
+            const day = date.getDate();
+            const month = date.toLocaleString('default', { month: 'short' });
+            const year = date.getFullYear();
+            const dateKey = `${day} ${month} ${year}`;
+
+            if (!dateMap[dateKey]) {
+                dateMap[dateKey] = new Set();
+            }
+            dateMap[dateKey].add(submission.titleSlug);
+        }
+    });
+
+    const result = {};
+    for (const [date, problems] of Object.entries(dateMap)) {
+        result[date] = problems.size;
+    }
+
+    return result;
 }
 
 const getLeetcodeHeatMap = async (username) => {
@@ -166,10 +218,46 @@ const getUserSolvedCount = async (username) => {
     });
 }
 
+const getLeetcodeDailyStats = async (username, period) => {
+    const rawData = await getLeetcodeAllData(username);
+    const result = {};
+
+    const parseDate = (dateStr) => new Date(dateStr);
+
+    if (period === 'all time') {
+        const sortedKeys = Object.keys(rawData).sort((a, b) => parseDate(a) - parseDate(b));
+        sortedKeys.forEach(k => {
+            result[k] = rawData[k];
+        });
+        return result;
+    }
+
+    let daysToLookBack = 30;
+    if (period === 'last 90 days') {
+        daysToLookBack = 90;
+    }
+
+    // Generate dates from (Today - daysToLookBack + 1) to Today
+    for (let i = daysToLookBack - 1; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+
+        const day = d.getDate();
+        const month = d.toLocaleString('default', { month: 'short' });
+        const year = d.getFullYear();
+        const key = `${day} ${month} ${year}`;
+
+        result[key] = rawData[key] || 0;
+    }
+
+    return result;
+}
+
 module.exports = {
     getLeetcodeDaily,
     getLeetcodeAllData,
     getLeetcodeHeatMap,
     getLeetcodeContestData,
-    getUserSolvedCount
+    getUserSolvedCount,
+    getLeetcodeDailyStats
 }

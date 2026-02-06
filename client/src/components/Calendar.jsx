@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import axios from 'axios';
 
 const Calendar = () => {
     const [calendarData, setCalendarData] = useState([]);
@@ -6,12 +7,10 @@ const Calendar = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const response = await fetch('http://localhost:5000/api/leetcode/heatmap', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username: "abdulaziz120" })
+                const response = await axios.post('http://localhost:5000/api/leetcode/heatmap', {
+                    username: "abdulaziz120"
                 });
-                const apiData = await response.json();
+                const apiData = response.data;
 
                 const today = new Date();
                 const startDate = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000);

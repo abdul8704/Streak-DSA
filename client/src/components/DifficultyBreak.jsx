@@ -1,4 +1,5 @@
 import React from 'react';
+import axios from 'axios';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 
 const DifficultyBreak = () => {
@@ -8,15 +9,10 @@ const DifficultyBreak = () => {
     React.useEffect(() => {
         const fetchStats = async () => {
             try {
-                const response = await fetch('http://localhost:5000/api/leetcode/solved', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ username: "abdulaziz120" }),
+                const response = await axios.post('http://localhost:5000/api/leetcode/solved', {
+                    username: "abdulaziz120"
                 });
-                const data = await response.json();
-                setStats(data);
+                setStats(response.data);
                 setLoading(false);
             } catch (error) {
                 console.error("Failed to fetch stats:", error);

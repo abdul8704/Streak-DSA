@@ -57,10 +57,22 @@ const getUserSolvedCount = async (req, res, next) => {
     }
 };
 
+const getDailyStats = async (req, res, next) => {
+    try {
+        const { username, period } = req.body;
+        const data = await leetcodeService.getLeetcodeDailyStats(username, period);
+        res.status(200).json(data);
+    }
+    catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     getLeetcodeDaily,
     getLeetcodeAllData,
     getRawLeetcodeHeatMap,
     getContestData,
-    getUserSolvedCount
+    getUserSolvedCount,
+    getDailyStats
 };

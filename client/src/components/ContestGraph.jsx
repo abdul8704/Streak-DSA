@@ -1,4 +1,5 @@
 import React from 'react';
+import axios from 'axios';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 const data = [
@@ -26,17 +27,11 @@ const ContestGraph = () => {
                 if (platform === 'codeforces') color = '#3b82f6';
                 if (platform === 'atcoder') color = '#ef4444';
 
-                const response = await fetch(`http://localhost:5000/api/${platform}/contest`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username: "abdulaziz120" })
+                const response = await axios.post(`http://localhost:5000/api/${platform}/contest`, {
+                    username: "abdulaziz120"
                 });
 
-                if (!response.ok) {
-                    throw new Error(`Error: ${response.status}`);
-                }
-
-                const rawData = await response.json();
+                const rawData = response.data;
 
                 // Process data: map to simple array for Recharts
                 // Expecting array of objects with { contest: { title }, rating, ... }
