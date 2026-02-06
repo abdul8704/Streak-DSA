@@ -5,10 +5,9 @@ const Calendar = () => {
 
     useEffect(() => {
         const today = new Date();
-        const startDate = new Date(today);
-        startDate.setFullYear(today.getFullYear() - 1);
+        const startDate = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000);
 
-        let iterDate = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+        let iterDate = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
         const data = [];
 
         while (iterDate <= today) {
@@ -47,7 +46,8 @@ const Calendar = () => {
     }, []);
     console.log(calendarData)
     const getColor = (intensity) => {
-        if (intensity <= 0) return 'bg-gray-300 dark:bg-[#393939]';
+        if(intensity === -1) return 'bg-transparent';
+        if (intensity === 0) return 'bg-gray-300 dark:bg-[#393939]';
         if (intensity === 1) return 'bg-[#016620]';
         if (intensity === 2 || intensity === 3) return 'bg-[#109932]';
         if (intensity === 4 || intensity === 5) return 'bg-[#28C244]';
@@ -57,7 +57,7 @@ const Calendar = () => {
     };
 
     return (
-        <div className="bg-card p-6 rounded-xl shadow-sm border border-border h-full flex flex-col overflow-hidden transition-colors">
+        <div className="bg-card p-5 rounded-xl shadow-sm border border-border h-full flex flex-col overflow-hidden transition-colors">
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-lg font-bold text-primary">Submission Calendar <span className="text-sm font-normal text-secondary ml-2">(Past Year)</span></h2>
                 <div className="flex items-center gap-2 text-xs text-secondary">
@@ -72,7 +72,7 @@ const Calendar = () => {
             </div>
 
             <div className="flex-1 overflow-x-auto pb-4">
-                <div className="flex gap-8 min-w-max">
+                <div className="flex gap-3 min-w-max">
                     {calendarData.map((month, idx) => (
                         <div key={idx} className="flex flex-col gap-2">
                             <span className="text-xs text-secondary font-medium text-center block">

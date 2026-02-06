@@ -27,10 +27,10 @@ const Dashboard = () => {
 
                 {/* Right Column (1/3 width) - StreakCalendar, ContestGraph */}
                 <div className="col-span-1 flex flex-col gap-6">
-                    <div className="flex-[2] min-h-[400px]">
+                    <div className="flex-none">
                         <StreakCalendar />
                     </div>
-                    <div className="flex-1 min-h-[250px]">
+                    <div className="flex-1 min-h-0">
                         <ContestGraph />
                     </div>
                 </div>

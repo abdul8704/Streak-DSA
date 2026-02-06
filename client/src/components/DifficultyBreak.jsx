@@ -1,17 +1,57 @@
 import React from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 
-const data = [
-    { name: 'Easy', value: 120, total: 924, color: 'var(--color-easy)' },
-    { name: 'Medium', value: 80, total: 2002, color: 'var(--color-medium)' },
-    { name: 'Hard', value: 15, total: 906, color: 'var(--color-hard)' },
-];
-
-// Calculate totals
-const solvedCount = data.reduce((acc, curr) => acc + curr.value, 0);
-const totalQuestions = data.reduce((acc, curr) => acc + curr.total, 0);
-
 const DifficultyBreak = () => {
+    const [stats, setStats] = React.useState([]);
+    const [loading, setLoading] = React.useState(true);
+
+    React.useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                const response = await fetch('http://localhost:5000/api/leetcode/solved', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ username: "abdulaziz120" }),
+                });
+                const data = await response.json();
+                setStats(data);
+                setLoading(false);
+            } catch (error) {
+                console.error("Failed to fetch stats:", error);
+                setLoading(false);
+            }
+        };
+
+        fetchStats();
+    }, []);
+
+    if (loading) {
+        return <div className="h-full flex items-center justify-center text-secondary">Loading...</div>;
+    }
+
+    // Process data for charts
+    const chartData = stats
+        .filter(item => item.difficulty !== 'All')
+        .map(item => {
+            let color;
+            if (item.difficulty === 'Easy') color = 'var(--color-easy)';
+            else if (item.difficulty === 'Medium') color = 'var(--color-medium)';
+            else if (item.difficulty === 'Hard') color = 'var(--color-hard)';
+
+            return {
+                name: item.difficulty,
+                value: item.count,
+                total: item.submissions,
+                color: color
+            };
+        });
+
+    const allStats = stats.find(item => item.difficulty === 'All') || { count: 0, submissions: 0 };
+    const solvedCount = allStats.count;
+    const totalQuestions = allStats.submissions;
+
     return (
         <div className="bg-card p-4 rounded-xl shadow-sm border border-border h-full grid grid-cols-4 gap-4 items-center transition-colors">
 
@@ -31,7 +71,7 @@ const DifficultyBreak = () => {
                 <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                         <Pie
-                            data={data}
+                            data={chartData}
                             innerRadius={"70%"}
                             outerRadius={"90%"}
                             startAngle={90}
@@ -40,7 +80,7 @@ const DifficultyBreak = () => {
                             dataKey="value"
                             stroke="none"
                         >
-                            {data.map((entry, index) => (
+                            {chartData.map((entry, index) => (
                                 <Cell key={`cell-${index}`} fill={entry.color} />
                             ))}
                         </Pie>
@@ -50,7 +90,7 @@ const DifficultyBreak = () => {
 
             {/* Col 4 (1/4): Difficulty Stats */}
             <div className="col-span-1 flex flex-col justify-center gap-2">
-                {data.map((item) => (
+                {chartData.map((item) => (
                     <div key={item.name} className="flex flex-col">
                         <div className="bg-card-hover rounded-lg p-2 flex flex-col justify-center">
                             <span className="text-xs font-medium" style={{ color: item.color }}>{item.name}</span>

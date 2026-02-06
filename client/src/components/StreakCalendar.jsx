@@ -60,7 +60,7 @@ const StreakCalendar = () => {
     };
 
     return (
-        <div className="bg-card p-4 rounded-xl shadow-sm border border-border h-full flex flex-col transition-colors">
+        <div className="bg-card p-4 rounded-xl shadow-sm border border-border  flex flex-col transition-colors">
             {/* Header */}
             <div className="flex justify-between items-center mb-4">
                 <h3 className="font-bold text-primary">{monthName} {year}</h3>
@@ -86,7 +86,7 @@ const StreakCalendar = () => {
             </div>
 
             {/* Stats Grid */}
-            <div className="grid grid-cols-2 gap-3 mt-auto pt-4 border-t border-border">
+            <div className="grid grid-cols-2 gap-3 pt-4 border-t border-border">
                 <div className="flex items-center gap-3 p-2 rounded-lg bg-surface">
                     <div className="p-2 bg-card rounded-md shadow-sm text-orange-500 border border-border">
                         <Zap size={16} />

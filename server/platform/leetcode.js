@@ -3,7 +3,7 @@ require('dotenv').config();
 const getLeetcodeDaily = () => {
     return `
         query recentAcSubmissions($username: String!) {
-            recentAcSubmissionList(username: $username, limit: 20) {
+            recentAcSubmissionList(username: $username, limit: 50) {
             id
             title
             titleSlug
@@ -32,7 +32,54 @@ const getLeetcodeAll = () => {
     `;
 }
 
+const getSubmissionHeatmap = () => {
+    return `
+        query getCalendar($username: String!) {
+            matchedUser(username: $username) {
+            submissionCalendar
+            }
+        }
+    `;
+}
+
+const getContestData = () => {
+    return `
+        query getContestRating($username: String!) {
+            userContestRankingHistory(username: $username) {
+                attended
+                rating
+                ranking
+                contest {
+                    title
+                }
+            }
+        }
+    `;
+}
+
+const getUserProfile = () => {
+    return `
+        query getUserProfile($username: String!) {
+            allQuestionsCount {
+                difficulty
+                count
+            }
+            matchedUser(username: $username) {
+                submitStats {
+                acSubmissionNum {
+                    difficulty
+                    count
+                    submissions
+                }
+                }
+            }
+        }`
+}
+
 module.exports = {
     getLeetcodeDaily,
-    getLeetcodeAll
+    getLeetcodeAll,
+    getSubmissionHeatmap,
+    getContestData,
+    getUserProfile
 }

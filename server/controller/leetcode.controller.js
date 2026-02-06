@@ -24,7 +24,43 @@ const getLeetcodeAllData = async (req, res, next) => {
     }
 };
 
+const getRawLeetcodeHeatMap = async (req, res, next) => {
+    try {
+        const username = req.body.username;
+        const data = await leetcodeService.getLeetcodeHeatMap(username);
+        res.status(200).json(data);
+    }
+    catch (error) {
+        next(error);
+    }
+};
+
+const getContestData = async (req, res, next) => {
+    try {
+        const username = req.body.username;
+        const data = await leetcodeService.getLeetcodeContestData(username);
+        res.status(200).json(data);
+    }
+    catch (error) {
+        next(error);
+    }
+};
+
+const getUserSolvedCount = async (req, res, next) => {
+    try {
+        const username = req.body.username;
+        const data = await leetcodeService.getUserSolvedCount(username);
+        res.status(200).json(data);
+    }
+    catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     getLeetcodeDaily,
-    getLeetcodeAllData
+    getLeetcodeAllData,
+    getRawLeetcodeHeatMap,
+    getContestData,
+    getUserSolvedCount
 };

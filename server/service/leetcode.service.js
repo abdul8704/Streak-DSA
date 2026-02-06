@@ -5,6 +5,8 @@ require('dotenv').config();
 const LEETCODE_ENDPOINT = process.env.LEETCODE_ENDPOINT;
 const LEETCODE_URL = process.env.LEETCODE_URL;
 
+const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
 const getLeetcodeDaily = async (username) => {
     const query = Queries.getLeetcodeDaily();
 
@@ -62,15 +64,100 @@ const getLeetcodeAllData = async (username) => {
             if (error.response && error.response.data) {
                 console.error("API Error Data:", JSON.stringify(error.response.data, null, 2));
             }
-            throw error; // Propagate to controller
+
+            // Check for Rate Limit (429) or Forbidden (403)
+            if (error.response && (error.response.status === 403 || error.response.status === 429)) {
+                console.warn(`Rate limit or Forbidden encountered. Waiting 1 minute before retrying offset ${offset}...`);
+                await delay(60000); // Wait 1 minute
+                continue; // Retry the same iteration (offset is not incremented)
+            }
+
+            throw error; // Propagate other errors to controller
         }
     }
 
     return allSubmissions.slice(0, targetCount);
 }
 
+const getLeetcodeHeatMap = async (username) => {
+    const query = Queries.getSubmissionHeatmap();
+
+    const response = await axios.post(
+        LEETCODE_ENDPOINT,
+        {
+            query,
+            variables: { username }
+        },
+        {
+            headers: {
+                "Content-Type": "application/json",
+                "Referer": LEETCODE_URL
+            }
+        }
+    );
+
+    const rawCalendar =
+        response.data.data.matchedUser.submissionCalendar;
+
+    const calendar = JSON.parse(rawCalendar);
+
+    return calendar;
+}
+
+const getLeetcodeContestData = async (username) => {
+    const query = Queries.getContestData();
+
+    const response = await axios.post(
+        LEETCODE_ENDPOINT,
+        {
+            query,
+            variables: { username }
+        },
+        {
+            headers: {
+                "Content-Type": "application/json",
+                "Referer": LEETCODE_URL
+            }
+        }
+    );
+
+    return response.data.data.userContestRankingHistory;
+}
+
+const getUserSolvedCount = async (username) => {
+    const query = Queries.getUserProfile();
+
+    const response = await axios.post(
+        LEETCODE_ENDPOINT,
+        {
+            query,
+            variables: { username }
+        },
+        {
+            headers: {
+                "Content-Type": "application/json",
+                "Referer": LEETCODE_URL
+            }
+        }
+    );
+
+    const solved = response.data.data.matchedUser.submitStats.acSubmissionNum;
+    const total = response.data.data.allQuestionsCount;
+
+    return solved.map(s => {
+        const t = total.find(t => t.difficulty === s.difficulty);
+        return {
+            difficulty: s.difficulty,
+            count: s.count,
+            submissions: t ? t.count : 0
+        };
+    });
+}
 
 module.exports = {
     getLeetcodeDaily,
-    getLeetcodeAllData
+    getLeetcodeAllData,
+    getLeetcodeHeatMap,
+    getLeetcodeContestData,
+    getUserSolvedCount
 }
