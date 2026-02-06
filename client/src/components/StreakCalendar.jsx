@@ -15,6 +15,22 @@ const StreakCalendar = () => {
         maxSolvedOneDay: 8
     };
 
+    const handlePrevMonth = () => {
+        setCurrentDate(prev => {
+            const newDate = new Date(prev);
+            newDate.setMonth(prev.getMonth() - 1);
+            return newDate;
+        });
+    };
+
+    const handleNextMonth = () => {
+        setCurrentDate(prev => {
+            const newDate = new Date(prev);
+            newDate.setMonth(prev.getMonth() + 1);
+            return newDate;
+        });
+    };
+
     const getDaysInMonth = (date) => {
         const year = date.getFullYear();
         const month = date.getMonth();
@@ -65,10 +81,10 @@ const StreakCalendar = () => {
             <div className="flex justify-between items-center mb-4">
                 <h3 className="font-bold text-primary">{monthName} {year}</h3>
                 <div className="flex gap-1">
-                    <button className="p-1 hover:bg-card-hover rounded-md text-secondary hover:text-primary">
+                    <button onClick={handlePrevMonth} className="p-1 hover:bg-card-hover rounded-md text-secondary hover:text-primary">
                         <ChevronLeft size={16} />
                     </button>
-                    <button className="p-1 hover:bg-card-hover rounded-md text-secondary hover:text-primary">
+                    <button onClick={handleNextMonth} className="p-1 hover:bg-card-hover rounded-md text-secondary hover:text-primary">
                         <ChevronRight size={16} />
                     </button>
                 </div>

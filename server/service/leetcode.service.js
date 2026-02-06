@@ -99,9 +99,21 @@ const getLeetcodeHeatMap = async (username) => {
     const rawCalendar =
         response.data.data.matchedUser.submissionCalendar;
 
+    const normalizedCalendar = {};
     const calendar = JSON.parse(rawCalendar);
 
-    return calendar;
+    for (const [timestamp, count] of Object.entries(calendar)) {
+        // LeetCode returns timestamps in seconds
+        const date = new Date(parseInt(timestamp) * 1000);
+        const day = date.getDate();
+        const month = date.toLocaleString('default', { month: 'short' });
+        const year = date.getFullYear();
+        const formattedDate = `${day} ${month} ${year}`;
+
+        normalizedCalendar[formattedDate] = count;
+    }
+
+    return normalizedCalendar;
 }
 
 const getLeetcodeContestData = async (username) => {

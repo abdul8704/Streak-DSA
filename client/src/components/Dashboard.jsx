@@ -20,7 +20,7 @@ const Dashboard = () => {
                     <div className="h-64">
                         <DifficultyBreak />
                     </div>
-                    <div className="h-[300px]">
+                    <div className="h-[450px]">
                         <SolvedGraph />
                     </div>
                 </div>

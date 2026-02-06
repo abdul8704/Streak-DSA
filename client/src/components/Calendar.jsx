@@ -4,54 +4,84 @@ const Calendar = () => {
     const [calendarData, setCalendarData] = useState([]);
 
     useEffect(() => {
-        const today = new Date();
-        const startDate = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000);
+        const fetchData = async () => {
+            try {
+                const response = await fetch('http://localhost:5000/api/leetcode/heatmap', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: "abdulaziz120" })
+                });
+                const apiData = await response.json();
 
-        let iterDate = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
-        const data = [];
+                const today = new Date();
+                const startDate = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000);
 
-        while (iterDate <= today) {
-            const year = iterDate.getFullYear();
-            const month = iterDate.getMonth();
-            const monthName = iterDate.toLocaleString('default', { month: 'short' });
-            const daysInMonth = new Date(year, month + 1, 0).getDate();
-            const startDay = new Date(year, month, 1).getDay();
+                let iterDate = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+                const data = [];
 
-            const days = [];
-            for (let d = 1; d <= daysInMonth; d++) {
-                const currentDate = new Date(year, month, d);
-                const isBeforeStart = currentDate < startDate;
-                const isAfterToday = currentDate > today;
+                while (iterDate <= today) {
+                    const year = iterDate.getFullYear();
+                    const month = iterDate.getMonth();
+                    const monthName = iterDate.toLocaleString('default', { month: 'short' });
+                    const daysInMonth = new Date(year, month + 1, 0).getDate();
+                    const startDay = new Date(year, month, 1).getDay();
 
-                if (isBeforeStart || isAfterToday) {
-                    days.push({ day: d, intensity: -1 });
-                } else {
-                    days.push({
-                        day: d,
-                        intensity: Math.random() > 0.6 ? Math.floor(Math.random() * 4) + 1 : 0
+                    const days = [];
+                    for (let d = 1; d <= daysInMonth; d++) {
+                        const currentDate = new Date(year, month, d);
+                        const isBeforeStart = currentDate < startDate;
+                        const isAfterToday = currentDate > today;
+
+                        if (isBeforeStart || isAfterToday) {
+                            days.push({ day: d, intensity: -1 });
+                        } else {
+                            // Construct date key "D MMM YYYY"
+                            const dayStr = d;
+                            const monthStr = currentDate.toLocaleString('default', { month: 'short' });
+                            const yearStr = year;
+                            const dateKey = `${dayStr} ${monthStr} ${yearStr}`;
+
+                            const count = apiData[dateKey] || 0;
+
+                            // Determine intensity based on count
+                            // 0 -> 0, 1-3 -> 2/3, 4+ -> 4/5 logic or simple mapping
+                            let intensity = 0;
+                            if (count === 0) intensity = 0;
+                            else if (count <= 2) intensity = 2; // mild green
+                            else if (count <= 5) intensity = 4; // medium green
+                            else intensity = 6; // bright green
+
+                            days.push({
+                                day: d,
+                                intensity: intensity
+                            });
+                        }
+                    }
+
+                    data.push({
+                        name: monthName,
+                        year: year,
+                        startDay,
+                        days
                     });
+                    iterDate.setMonth(iterDate.getMonth() + 1);
                 }
+
+                setCalendarData(data);
+            } catch (error) {
+                console.error("Failed to fetch heatmap data:", error);
             }
+        };
 
-            data.push({
-                name: monthName,
-                year: year,
-                startDay,
-                days
-            });
-            iterDate.setMonth(iterDate.getMonth() + 1);
-        }
-
-        setCalendarData(data);
+        fetchData();
     }, []);
-    console.log(calendarData)
+
     const getColor = (intensity) => {
-        if(intensity === -1) return 'bg-transparent';
-        if (intensity === 0) return 'bg-gray-300 dark:bg-[#393939]';
-        if (intensity === 1) return 'bg-[#016620]';
-        if (intensity === 2 || intensity === 3) return 'bg-[#109932]';
-        if (intensity === 4 || intensity === 5) return 'bg-[#28C244]';
-        if (intensity >= 6) return 'bg-[#7FE18B]';
+        if (intensity === -1) return 'bg-transparent';
+        if (intensity === 0) return 'bg-gray-300 dark:bg-[#393939]'; // 0 submissions
+        if (intensity <= 2) return 'bg-[#0e4429] dark:bg-[#0e4429]'; // 1-2 submissions
+        if (intensity <= 4) return 'bg-[#006d32] dark:bg-[#006d32]'; // 3-5 submissions
+        if (intensity >= 5) return 'bg-[#39d353] dark:bg-[#39d353]'; // 6+ submissions
 
         return 'bg-gray-300 dark:bg-[#393939]'; // default fallback
     };
