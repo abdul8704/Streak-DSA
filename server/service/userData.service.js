@@ -57,7 +57,7 @@ const getStreakCalendarData = async (username, month, year) => {
         const daysInMonth = new Date(startY, startM, 0).getDate();
         const endStr = `${startY}-${String(startM).padStart(2, '0')}-${daysInMonth}`;
 
-        const data = await userSubmissionQueries.getUserHeatmap(userId, startStr, endStr);
+        const data = await userSubmissionQueries.getSolvedProblemsCountByDate(userId, startStr, endStr);
 
         const result = {};
         data.forEach(row => {
@@ -109,7 +109,7 @@ const getProblemsSolvedGraphData = async (username, range) => {
         const endDay = String(now.getDate()).padStart(2, '0');
         const endStr = `${endYear}-${endMonth}-${endDay}`;
 
-        const data = await userSubmissionQueries.getUserHeatmap(userId, startDate, endStr);
+        const data = await userSubmissionQueries.getSolvedProblemsCountByDate(userId, startDate, endStr);
 
         return data.map(row => {
             let dateStr = row.date instanceof Date ? row.date : row.date;
@@ -131,9 +131,45 @@ const getProblemsSolvedGraphData = async (username, range) => {
     }
 }
 
+const getUserStats = async (username) => {
+    try {
+        const userId = await getUserIdOrThrow(username);
+        const stats = await userSubmissionQueries.getUserStreakStats(userId);
+
+        // Calculate Solved Today
+        const today = new Date();
+        const y = today.getFullYear();
+        const m = String(today.getMonth() + 1).padStart(2, '0');
+        const d = String(today.getDate()).padStart(2, '0');
+        const todayStr = `${y}-${m}-${d}`;
+
+        const solvedToday = await userSubmissionQueries.getSolvedCountForDate(userId, todayStr);
+
+        if (!stats) {
+            return {
+                maxStreak: 0,
+                currentStreak: 0,
+                highestSolvedOneDay: solvedToday > 0 ? solvedToday : 0, // Should be at least solvedToday logic or just 0 from stats table default
+                solvedToday: solvedToday
+            };
+        }
+
+        return {
+            maxStreak: stats.max_streak,
+            currentStreak: stats.current_streak,
+            highestSolvedOneDay: stats.highest_solved_one_day,
+            solvedToday: solvedToday
+        };
+    } catch (error) {
+        console.error('Error fetching user stats:', error);
+        throw error;
+    }
+}
+
 module.exports = {
     getHeatmapData,
     getUserContests,
     getStreakCalendarData,
-    getProblemsSolvedGraphData
+    getProblemsSolvedGraphData,
+    getUserStats
 };

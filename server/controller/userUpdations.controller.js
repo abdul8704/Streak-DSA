@@ -60,9 +60,39 @@ const syncDaily = async (req, res, next) => {
     }
 };
 
+const syncContests = async (req, res, next) => {
+    try {
+        const { username } = req.body;
+        if (!username) return res.status(400).json({ error: "Username required" });
+        const count = await userUpdationService.syncContestsByUsername(username);
+        res.status(200).json({ message: 'Contests synced', count });
+    } catch (error) {
+        if (error.message === 'User not found') {
+            return res.status(404).json({ error: error.message });
+        }
+        next(error);
+    }
+}
+
+const syncHeatmap = async (req, res, next) => {
+    try {
+        const { username } = req.body;
+        if (!username) return res.status(400).json({ error: "Username required" });
+        const count = await userUpdationService.syncHeatmapByUsername(username);
+        res.status(200).json({ message: 'Heatmap synced', updatedDays: count });
+    } catch (error) {
+        if (error.message === 'User not found') {
+            return res.status(404).json({ error: error.message });
+        }
+        next(error);
+    }
+}
+
 module.exports = {
     syncUserSubmissions,
     syncDaily,
+    syncContests,
+    syncHeatmap,
     createUser,
     addPlatformHandles
 };

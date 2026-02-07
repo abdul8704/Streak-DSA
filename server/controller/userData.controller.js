@@ -48,9 +48,20 @@ const getSolvedGraph = async (req, res) => {
     }
 }
 
+const getStats = async (req, res) => {
+    try {
+        const { username } = req.params;
+        const data = await userDataService.getUserStats(username);
+        res.status(200).json(data);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+
 module.exports = {
     getHeatmap,
     getContests,
     getStreakCalendar,
-    getSolvedGraph
+    getSolvedGraph,
+    getStats
 };

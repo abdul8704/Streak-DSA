@@ -293,11 +293,29 @@ const syncUserDaily = async (username) => {
     }
 }
 
+const syncContestsByUsername = async (username) => {
+    const userId = await userSubmissionQueries.getUserIdByUsername(username);
+    if (!userId) {
+        throw new Error('User not found');
+    }
+    return syncUserContests(userId, username);
+}
+
+const syncHeatmapByUsername = async (username) => {
+    const userId = await userSubmissionQueries.getUserIdByUsername(username);
+    if (!userId) {
+        throw new Error('User not found');
+    }
+    return syncUserHeatmap(userId, username);
+}
+
 module.exports = {
     syncUserSubmissions,
     syncUserDaily,
     syncUserContests,
     syncUserHeatmap,
+    syncContestsByUsername,
+    syncHeatmapByUsername,
     createUser,
     addPlatformHandles
 };

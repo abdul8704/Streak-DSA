@@ -126,14 +126,65 @@ const getUserIdByUsername = async (username) => {
     }
 }
 
+const getSolvedProblemsCountByDate = async (userId, startDate, endDate) => {
+    try {
+        let query = `
+            SELECT DATE(solved_at) as date, COUNT(*) as count_of_solved 
+            FROM user_solved_problems 
+            WHERE user_id = ?
+        `;
+        const params = [userId];
+
+        if (startDate && endDate) {
+            query += ' AND DATE(solved_at) BETWEEN ? AND ?';
+            params.push(startDate, endDate);
+        } else if (startDate) {
+            query += ' AND DATE(solved_at) >= ?';
+            params.push(startDate);
+        }
+
+        query += ' GROUP BY DATE(solved_at) ORDER BY date ASC';
+
+        const [rows] = await pool.execute(query, params);
+        return rows;
+    } catch (err) {
+        console.error('Error fetching solved problems count by date', err);
+        throw err;
+    }
+}
+
+const getUserStreakStats = async (userId) => {
+    try {
+        const query = 'SELECT * FROM user_streak_stats WHERE user_id = ?';
+        const [rows] = await pool.execute(query, [userId]);
+        return rows[0]; // Returns undefined if no stats found
+    } catch (err) {
+        console.error('Error fetching user streak stats', err);
+        throw err;
+    }
+}
+
+const getSolvedCountForDate = async (userId, dateStr) => {
+    try {
+        const query = 'SELECT COUNT(*) as count FROM user_solved_problems WHERE user_id = ? AND DATE(solved_at) = ?';
+        const [rows] = await pool.execute(query, [userId, dateStr]);
+        return rows[0]?.count || 0;
+    } catch (err) {
+        console.error('Error fetching solved count for date', err);
+        throw err;
+    }
+}
+
 module.exports = {
     insertUserSolvedProblem,
     insertUserHeatmap,
     updateUserStreakStats,
     getUserIdByUsername,
-    getUserIdByUsername,
     deleteUserContestsByPlatform,
     insertUserContest,
     getUserContests,
-    getUserHeatmap
+    getUserHeatmap,
+    getSolvedProblemsCountByDate,
+    getUserStreakStats,
+    getSolvedCountForDate
 };
