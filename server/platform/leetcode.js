@@ -27,6 +27,7 @@ const getLeetcodeAll = () => {
             statusDisplay
             timestamp
             }
+            hasNext
         }
         }
     `;
@@ -51,6 +52,7 @@ const getContestData = () => {
                 ranking
                 contest {
                     title
+                    startTime
                 }
             }
         }

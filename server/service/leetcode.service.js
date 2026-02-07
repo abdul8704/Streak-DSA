@@ -1,5 +1,6 @@
 const axios = require('axios');
 const Queries = require('../platform/leetcode');
+const { formatSubmissionData, mapSubmissionCountsByDate } = require('../utils/leetcode.utils');
 require('dotenv').config();
 
 const LEETCODE_ENDPOINT = process.env.LEETCODE_ENDPOINT;
@@ -25,37 +26,16 @@ const getLeetcodeDaily = async (username) => {
     );
 
     const recentSubmissions = response.data.data.recentAcSubmissionList;
-    const dateMap = {};
-
-    recentSubmissions.forEach(submission => {
-        const date = new Date(parseInt(submission.timestamp) * 1000);
-        const day = date.getDate();
-        const month = date.toLocaleString('default', { month: 'short' });
-        const year = date.getFullYear();
-        const dateKey = `${day} ${month} ${year}`;
-
-        if (!dateMap[dateKey]) {
-            dateMap[dateKey] = new Set();
-        }
-        dateMap[dateKey].add(submission.titleSlug);
-    });
-
-    const result = {};
-    for (const [date, problems] of Object.entries(dateMap)) {
-        result[date] = problems.size;
-    }
-
-    return result;
+    return formatSubmissionData(recentSubmissions);
 }
 
-const getLeetcodeAllData = async (username, leetcodeSession, csrfToken, targetCount = 2000) => {
+const getLeetcodeAllData = async (username, leetcodeSession, csrfToken) => {
     const query = Queries.getLeetcodeAll();
-    // console.log(query);
-    const pageSize = 75; // safe batch size
+    const pageSize = 50;
     let offset = 0;
     let allSubmissions = [];
 
-    while (allSubmissions.length < targetCount) {
+    while (true) {
         try {
             const response = await axios.post(
                 LEETCODE_ENDPOINT,
@@ -73,11 +53,16 @@ const getLeetcodeAllData = async (username, leetcodeSession, csrfToken, targetCo
                 }
             );
 
-            const submissions = response.data.data.submissionList.submissions;
+            const submissionList = response.data.data.submissionList;
+            const submissions = submissionList.submissions;
+            const hasNext = submissionList.hasNext;
 
-            if (!submissions || submissions.length === 0) break;
+            if (submissions && submissions.length > 0) {
+                allSubmissions.push(...submissions);
+            }
 
-            allSubmissions.push(...submissions);
+            if (!hasNext) break;
+
             offset += pageSize;
         } catch (error) {
             console.error(`Error fetching submissions at offset ${offset}:`, error.message);
@@ -87,47 +72,16 @@ const getLeetcodeAllData = async (username, leetcodeSession, csrfToken, targetCo
 
             // Check for Rate Limit (429) or Forbidden (403)
             if (error.response && (error.response.status === 403 || error.response.status === 429)) {
-                console.warn(`Rate limit or Forbidden encountered. Waiting 1 minute before retrying offset ${offset}...`);
-                await delay(60000); // Wait 1 minute
+                console.warn(`Rate limit or Forbidden encountered. Waiting 1.5 minutes before retrying offset ${offset}...`);
+                await delay(90000); // Wait 1.5 minutes
                 continue; // Retry the same iteration (offset is not incremented)
             }
 
-            throw error; // Propagate other errors to controller
+            throw error; // Propagate other errors
         }
     }
 
-    const allSubmissionsSliced = allSubmissions.slice(0, targetCount);
-
-    // Transform to { date: count }
-    const dateMap = {};
-
-    // Note: getLeetcodeAll returns statusDisplay in string, we might want to filter only AC?
-    // But the user just said "do the same", and for getLeetcodeDaily it is "Recent AC Submissions".
-    // For general submissions we should probably filter for statusDisplay === 'Accepted'.
-    // Looking at the query in leetcode.js, it fetches statusDisplay.
-
-    allSubmissionsSliced.forEach(submission => {
-        // Only count accepted solutions to match "solved per day" logic generally expected
-        if (submission.statusDisplay === 'Accepted') {
-            const date = new Date(parseInt(submission.timestamp) * 1000);
-            const day = date.getDate();
-            const month = date.toLocaleString('default', { month: 'short' });
-            const year = date.getFullYear();
-            const dateKey = `${day} ${month} ${year}`;
-
-            if (!dateMap[dateKey]) {
-                dateMap[dateKey] = new Set();
-            }
-            dateMap[dateKey].add(submission.titleSlug);
-        }
-    });
-
-    const result = {};
-    for (const [date, problems] of Object.entries(dateMap)) {
-        result[date] = problems.size;
-    }
-
-    return result;
+    return formatSubmissionData(allSubmissions);
 }
 
 const getLeetcodeHeatMap = async (username) => {
@@ -218,7 +172,8 @@ const getUserSolvedCount = async (username) => {
 }
 
 const getLeetcodeDailyStats = async (username, period) => {
-    const rawData = await getLeetcodeDaily(username);
+    const submissions = await getLeetcodeDaily(username);
+    const rawData = mapSubmissionCountsByDate(submissions);
     const result = {};
 
     const parseDate = (dateStr) => new Date(dateStr);
