@@ -25,6 +25,12 @@ const getLeetcodeDaily = async (username) => {
         }
     );
 
+    if (!response.data.data || !response.data.data.recentAcSubmissionList) {
+        // Fallback or throw
+        console.warn(`No recentAcSubmissionList found for ${username}`);
+        return [];
+    }
+
     const recentSubmissions = response.data.data.recentAcSubmissionList;
     return formatSubmissionData(recentSubmissions);
 }
@@ -101,8 +107,11 @@ const getLeetcodeHeatMap = async (username) => {
         }
     );
 
-    const rawCalendar =
-        response.data.data.matchedUser.submissionCalendar;
+    if (!response.data.data || !response.data.data.matchedUser) {
+        throw new Error('LeetCode user not found');
+    }
+
+    const rawCalendar = response.data.data.matchedUser.submissionCalendar;
 
     const normalizedCalendar = {};
     const calendar = JSON.parse(rawCalendar);
@@ -157,6 +166,10 @@ const getUserSolvedCount = async (username) => {
             }
         }
     );
+
+    if (!response.data.data || !response.data.data.matchedUser) {
+        throw new Error('LeetCode user not found');
+    }
 
     const solved = response.data.data.matchedUser.submitStats.acSubmissionNum;
     const total = response.data.data.allQuestionsCount;

@@ -6,5 +6,6 @@ router.post('/sync', userUpdationsController.syncUserSubmissions);
 router.post('/sync/daily', userUpdationsController.syncDaily);
 router.post('/create', userUpdationsController.createUser);
 router.post('/platform', userUpdationsController.addPlatformHandles);
+router.get('/platforms/:username', userUpdationsController.getUserPlatforms);
 
 module.exports = router;

@@ -4,9 +4,9 @@ const userSubmissionQueries = require('../db/queries/user_submission');
 const userManagementQueries = require('../db/queries/user_management');
 const bcrypt = require('bcrypt');
 
-const syncUserHeatmap = async (userId, username) => {
+const syncUserHeatmap = async (userId, handle) => {
     try {
-        const heatmapData = await leetcodeService.getLeetcodeHeatMap(username);
+        const heatmapData = await leetcodeService.getLeetcodeHeatMap(handle);
 
         let updatedDays = 0;
         for (const [dateStr, count] of Object.entries(heatmapData)) {
@@ -24,9 +24,9 @@ const syncUserHeatmap = async (userId, username) => {
     }
 }
 
-const syncUserContests = async (userId, username) => {
+const syncUserContests = async (userId, handle) => {
     try {
-        const contestHistory = await leetcodeService.getLeetcodeContestData(username);
+        const contestHistory = await leetcodeService.getLeetcodeContestData(handle);
 
         // Clear existing contest data for this user/platform to avoid duplicates/stale data
         await userSubmissionQueries.deleteUserContestsByPlatform(userId, 'leetcode');
@@ -55,8 +55,14 @@ const syncUserContests = async (userId, username) => {
 
 const syncUserSubmissions = async (username, leetcodeSession, csrfToken) => {
     try {
+        // 0. Fetch LeetCode Handle
+        const leetcodeHandle = await userManagementQueries.getUserPlatformHandle(username, 'leetcode');
+        const handleToUse = leetcodeHandle || username; // Fallback to username if no handle linked? Or strict? 
+        // For full sync with session, maybe username is fine if they haven't linked? 
+        // But user said "use this handles as username". Let's prefer handle.
+
         // 1. Fetch all accepted submissions
-        const submissions = await leetcodeService.getLeetcodeAllData(username, leetcodeSession, csrfToken);
+        const submissions = await leetcodeService.getLeetcodeAllData(handleToUse, leetcodeSession, csrfToken);
 
         // Sort by timestamp ascending (earliest first)
         submissions.sort((a, b) => parseInt(a.timestamp) - parseInt(b.timestamp));
@@ -140,8 +146,8 @@ const syncUserSubmissions = async (username, leetcodeSession, csrfToken) => {
 
         // 6. Sync Contest Data
         // 6. Invoke Separate Sync Services
-        const contestsSynced = await syncUserContests(userId, username);
-        const heatmapDaysSynced = await syncUserHeatmap(userId, username);
+        const contestsSynced = await syncUserContests(userId, handleToUse);
+        const heatmapDaysSynced = await syncUserHeatmap(userId, handleToUse);
 
         return {
             message: 'Sync successful',
@@ -199,6 +205,16 @@ const addPlatformHandles = async (username, platforms) => {
     }
 }
 
+const getUserPlatforms = async (username) => {
+    try {
+        const platforms = await userManagementQueries.getUserPlatforms(username);
+        return platforms;
+    } catch (error) {
+        console.error('Error fetching user platforms:', error);
+        throw error;
+    }
+}
+
 const syncUserDaily = async (username) => {
     try {
         const userId = await userSubmissionQueries.getUserIdByUsername(username);
@@ -206,8 +222,13 @@ const syncUserDaily = async (username) => {
             throw new Error(`User not found: ${username}`);
         }
 
+        const leetcodeHandle = await userManagementQueries.getUserPlatformHandle(username, 'leetcode');
+        if (!leetcodeHandle) {
+            throw new Error(`LeetCode handle not found for user: ${username}`);
+        }
+
         // 1. Fetch Daily (Recent) Submissions
-        const recentSubmissions = await leetcodeService.getLeetcodeDaily(username);
+        const recentSubmissions = await leetcodeService.getLeetcodeDaily(leetcodeHandle);
 
         // 2. Insert Recent Solved Problems
         for (const submission of recentSubmissions) {
@@ -220,10 +241,10 @@ const syncUserDaily = async (username) => {
         }
 
         // 3. Sync Heatmap (fetches full calendar from LeetCode)
-        const heatmapDaysSynced = await syncUserHeatmap(userId, username);
+        const heatmapDaysSynced = await syncUserHeatmap(userId, leetcodeHandle);
 
         // 4. Sync Contests
-        const contestsSynced = await syncUserContests(userId, username);
+        const contestsSynced = await syncUserContests(userId, leetcodeHandle);
 
         // 5. Recalculate Streak Stats from DB (User Heatmap)
         // We need to query the full heatmap to calculate accurate streak
@@ -298,7 +319,11 @@ const syncContestsByUsername = async (username) => {
     if (!userId) {
         throw new Error('User not found');
     }
-    return syncUserContests(userId, username);
+    const leetcodeHandle = await userManagementQueries.getUserPlatformHandle(username, 'leetcode');
+    if (!leetcodeHandle) {
+        throw new Error(`LeetCode handle not found for user: ${username}`);
+    }
+    return syncUserContests(userId, leetcodeHandle);
 }
 
 const syncHeatmapByUsername = async (username) => {
@@ -306,7 +331,11 @@ const syncHeatmapByUsername = async (username) => {
     if (!userId) {
         throw new Error('User not found');
     }
-    return syncUserHeatmap(userId, username);
+    const leetcodeHandle = await userManagementQueries.getUserPlatformHandle(username, 'leetcode');
+    if (!leetcodeHandle) {
+        throw new Error(`LeetCode handle not found for user: ${username}`);
+    }
+    return syncUserHeatmap(userId, leetcodeHandle);
 }
 
 module.exports = {
@@ -317,5 +346,6 @@ module.exports = {
     syncContestsByUsername,
     syncHeatmapByUsername,
     createUser,
-    addPlatformHandles
+    addPlatformHandles,
+    getUserPlatforms
 };

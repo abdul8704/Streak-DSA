@@ -22,7 +22,9 @@ const insertUserPlatform = async (userId, platform, handle) => {
             ON DUPLICATE KEY UPDATE platform_handle = VALUES(platform_handle)
         `;
         const [result] = await pool.execute(query, [userId, platform, handle]);
+        console.log(result);
         return result;
+
     } catch (err) {
         console.error('Error inserting user platform', err);
         throw err;
@@ -73,10 +75,44 @@ const updateUser = async (username, email, passwordHash) => {
     }
 };
 
+const getUserPlatformHandle = async (username, platform) => {
+    try {
+        const query = `
+            SELECT up.platform_handle 
+            FROM user_platform up
+            JOIN users u ON u.user_id = up.user_id
+            WHERE u.username = ? AND up.platform = ?
+        `;
+        const [rows] = await pool.execute(query, [username, platform]);
+        return rows.length > 0 ? rows[0].platform_handle : null;
+    } catch (err) {
+        console.error('Error fetching user platform handle', err);
+        throw err;
+    }
+};
+
+const getUserPlatforms = async (username) => {
+    try {
+        const query = `
+            SELECT up.platform, up.platform_handle 
+            FROM user_platform up
+            JOIN users u ON u.user_id = up.user_id
+            WHERE u.username = ?
+        `;
+        const [rows] = await pool.execute(query, [username]);
+        return rows;
+    } catch (err) {
+        console.error('Error fetching user platforms', err);
+        throw err;
+    }
+};
+
 module.exports = {
     insertUser,
     insertUserPlatform,
     checkUserExists,
     getUserByUsername,
-    updateUser
+    updateUser,
+    getUserPlatformHandle,
+    getUserPlatforms
 };

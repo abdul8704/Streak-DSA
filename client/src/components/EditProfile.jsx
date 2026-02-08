@@ -16,6 +16,25 @@ const EditProfile = () => {
     useEffect(() => {
         if (user) {
             setProfileData(prev => ({ ...prev, email: user.email }));
+
+            // Fetch platforms
+            const fetchPlatforms = async () => {
+                try {
+                    const response = await fetch(`http://localhost:5000/api/user/platforms/${user.username}`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        setPlatforms(data);
+                        // Pre-fill leetcode handle if exists
+                        const leetcode = data.find(p => p.platform === 'leetcode');
+                        if (leetcode) {
+                            setNewPlatform(prev => ({ ...prev, handle: leetcode.platform_handle }));
+                        }
+                    }
+                } catch (error) {
+                    console.error("Failed to fetch platforms", error);
+                }
+            };
+            fetchPlatforms();
         }
     }, [user]);
 
@@ -150,13 +169,30 @@ const EditProfile = () => {
                             <label className="block text-sm font-medium text-text-secondary mb-1">Platform</label>
                             <select
                                 value={newPlatform.platform}
-                                onChange={(e) => setNewPlatform({ ...newPlatform, platform: e.target.value })}
+                                onChange={(e) => {
+                                    const selected = e.target.value;
+                                    const existing = platforms.find(p => p.platform === selected);
+                                    setNewPlatform({
+                                        platform: selected,
+                                        handle: existing ? existing.platform_handle : ''
+                                    });
+                                }}
                                 className="w-full rounded-lg border border-border bg-background p-2.5 text-primary focus:border-text-accent focus:outline-none"
                             >
                                 <option value="leetcode">LeetCode</option>
                                 <option value="codeforces">Codeforces</option>
                                 <option value="geeksforgeeks">GeeksForGeeks</option>
                             </select>
+                        </div>
+
+                        {/* Display Current Handle Status */}
+                        <div className="text-sm">
+                            <span className="text-text-secondary">Current Handle: </span>
+                            {platforms.find(p => p.platform === newPlatform.platform) ? (
+                                <span className="text-primary font-medium">{platforms.find(p => p.platform === newPlatform.platform).platform_handle}</span>
+                            ) : (
+                                <span className="text-red-400 italic">No handle found</span>
+                            )}
                         </div>
 
                         <div>

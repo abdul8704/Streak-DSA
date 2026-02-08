@@ -6,7 +6,7 @@ const Login = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
-    const { login } = useAuth();
+    const { login, loading } = useAuth();
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
@@ -56,11 +56,18 @@ const Login = () => {
                         />
                     </div>
 
+                    <div className="flex justify-end">
+                        <Link to="/forgot-password" className="text-xs text-primary hover:underline hover:text-primary-hover">
+                            Forgot password?
+                        </Link>
+                    </div>
+
                     <button
                         type="submit"
+                        disabled={loading ? true : false}
                         className="w-full rounded-lg bg-text-accent py-2.5 font-semibold text-white transition-transform hover:scale-[1.02] active:scale-95 shadow-md shadow-text-accent/20"
                     >
-                        Sign In
+                        {loading ? 'Logging In...' : 'Sign In'}
                     </button>
                 </form>
 

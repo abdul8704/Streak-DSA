@@ -1,10 +1,15 @@
 const leetcodeService = require('../service/leetcode.service');
+const userManagementQueries = require('../db/queries/user_management');
 
 const getLeetcodeDaily = async (req, res, next) => {
     try {
         // console.log(req.body);
         const username = req.body.username;
-        const data = await leetcodeService.getLeetcodeDaily(username);
+        const leetcodeHandle = await userManagementQueries.getUserPlatformHandle(username, 'leetcode');
+        if (!leetcodeHandle) {
+            return res.status(404).json({ message: 'LeetCode handle not found for this user' });
+        }
+        const data = await leetcodeService.getLeetcodeDaily(leetcodeHandle);
         res.status(200).json(data);
     }
     catch (error) {
@@ -15,7 +20,11 @@ const getLeetcodeDaily = async (req, res, next) => {
 const getLeetcodeAllData = async (req, res, next) => {
     try {
         const { username, leetcode_session, csrf_token } = req.body;
-        const data = await leetcodeService.getLeetcodeAllData(username, leetcode_session, csrf_token);
+        const leetcodeHandle = await userManagementQueries.getUserPlatformHandle(username, 'leetcode');
+        if (!leetcodeHandle) {
+            return res.status(404).json({ message: 'LeetCode handle not found for this user' });
+        }
+        const data = await leetcodeService.getLeetcodeAllData(leetcodeHandle, leetcode_session, csrf_token);
         res.status(200).json(data);
     }
     catch (error) {
@@ -27,7 +36,10 @@ const getLeetcodeAllData = async (req, res, next) => {
 const getRawLeetcodeHeatMap = async (req, res, next) => {
     try {
         const username = req.body.username;
-        const data = await leetcodeService.getLeetcodeHeatMap(username);
+        const leetcodeHandle = await userManagementQueries.getUserPlatformHandle(username, 'leetcode');
+        if (!leetcodeHandle) return res.status(404).json({ message: 'LeetCode handle not found' });
+
+        const data = await leetcodeService.getLeetcodeHeatMap(leetcodeHandle);
         res.status(200).json(data);
     }
     catch (error) {
@@ -38,7 +50,10 @@ const getRawLeetcodeHeatMap = async (req, res, next) => {
 const getContestData = async (req, res, next) => {
     try {
         const username = req.body.username;
-        const data = await leetcodeService.getLeetcodeContestData(username);
+        const leetcodeHandle = await userManagementQueries.getUserPlatformHandle(username, 'leetcode');
+        if (!leetcodeHandle) return res.status(404).json({ message: 'LeetCode handle not found' });
+
+        const data = await leetcodeService.getLeetcodeContestData(leetcodeHandle);
         res.status(200).json(data);
     }
     catch (error) {
@@ -49,7 +64,10 @@ const getContestData = async (req, res, next) => {
 const getUserSolvedCount = async (req, res, next) => {
     try {
         const username = req.body.username;
-        const data = await leetcodeService.getUserSolvedCount(username);
+        const leetcodeHandle = await userManagementQueries.getUserPlatformHandle(username, 'leetcode');
+        if (!leetcodeHandle) return res.status(404).json({ message: 'LeetCode handle not found' });
+
+        const data = await leetcodeService.getUserSolvedCount(leetcodeHandle);
         res.status(200).json(data);
     }
     catch (error) {
@@ -60,7 +78,10 @@ const getUserSolvedCount = async (req, res, next) => {
 const getDailyStats = async (req, res, next) => {
     try {
         const { username, period } = req.body;
-        const data = await leetcodeService.getLeetcodeDailyStats(username, period);
+        const leetcodeHandle = await userManagementQueries.getUserPlatformHandle(username, 'leetcode');
+        if (!leetcodeHandle) return res.status(404).json({ message: 'LeetCode handle not found' });
+
+        const data = await leetcodeService.getLeetcodeDailyStats(leetcodeHandle, period);
         res.status(200).json(data);
     }
     catch (error) {

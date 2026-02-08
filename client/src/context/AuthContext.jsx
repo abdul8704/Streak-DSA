@@ -8,19 +8,36 @@ export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        // Check for saved user in localStorage on mount
-        const storedUser = localStorage.getItem('user');
-        if (storedUser) {
-            try {
-                setUser(JSON.parse(storedUser));
-            } catch (error) {
-                console.error("Failed to parse stored user", error);
-                localStorage.removeItem('user');
+    // Check auth on mount
+    // Check auth on mount
+    const checkAuth = async () => {
+        try {
+            const response = await fetch('http://localhost:5000/api/auth/me', {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include'
+            });
+
+            if (response.ok) {
+                const userData = await response.json();
+                setUser(userData);
+            } else {
+                setUser(null);
             }
+        } catch (error) {
+            console.error("Auth check failed:", error);
+            setUser(null);
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
+    };
+
+    useEffect(() => {
+        checkAuth();
     }, []);
+
+    // Replacing fetch with a helper or just updating all calls?
+    // Let's update `login` to expecting cookie.
 
     const login = async (username, password) => {
         try {
@@ -28,6 +45,7 @@ export const AuthProvider = ({ children }) => {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username, password }),
+                credentials: 'include' // Important for setting cookie
             });
 
             if (!response.ok) {
@@ -37,6 +55,9 @@ export const AuthProvider = ({ children }) => {
 
             const userData = await response.json();
             setUser(userData);
+            // No localStorage needed for user persistence if we trust the cookie check on reload.
+            // But checking /me on every reload causes a flash of "loading".
+            // We can keep localStorage as a hint or "optimistic" user state.
             localStorage.setItem('user', JSON.stringify(userData));
             return { success: true };
         } catch (error) {
@@ -44,28 +65,41 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    const signup = async (username, email, password) => {
+    const initiateSignup = async (username, email, password) => {
         try {
-            const response = await fetch('http://localhost:5000/api/user/create', {
+            const response = await fetch('http://localhost:5000/api/auth/signup/init', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, email, password }),
+                body: JSON.stringify({ username, email, password })
             });
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Signup failed');
-            }
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.message || 'Signup initiation failed');
 
-            // Automatically login or just return success? 
-            // The plan said "Redirect to /profile on success", usually requires login first.
-            // For now, let's just return success and let the component handle redirect to login or auto-login.
-            // But to make it seamless, we can auto-login if the create endpoint returned user data, but it likely returns just a success message.
-            return { success: true };
+            return { success: true, message: data.message };
         } catch (error) {
             return { success: false, message: error.message };
         }
     };
+
+    const verifySignup = async (username, email, password, otp) => {
+        try {
+            const response = await fetch('http://localhost:5000/api/auth/signup/verify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, email, password, otp })
+            });
+
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.message || 'Verification failed');
+
+            return { success: true, message: data.message };
+        } catch (error) {
+            return { success: false, message: error.message };
+        }
+    };
+
+    // I should rewrite the whole AuthContext to align with specific needs.
 
     const logout = () => {
         setUser(null);
@@ -106,7 +140,8 @@ export const AuthProvider = ({ children }) => {
     const value = {
         user,
         login,
-        signup,
+        initiateSignup,
+        verifySignup,
         logout,
         updateProfile,
         loading

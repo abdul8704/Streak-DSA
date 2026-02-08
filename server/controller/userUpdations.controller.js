@@ -33,6 +33,7 @@ const createUser = async (req, res, next) => {
 const addPlatformHandles = async (req, res, next) => {
     try {
         const { username, platforms } = req.body;
+        console.log(req.body)
 
         if (!username || !Array.isArray(platforms)) {
             return res.status(400).json({ message: 'Invalid input: username and platforms (array) are required' });
@@ -88,11 +89,25 @@ const syncHeatmap = async (req, res, next) => {
     }
 }
 
+const getUserPlatforms = async (req, res, next) => {
+    try {
+        const { username } = req.params;
+        if (!username) {
+            return res.status(400).json({ message: 'Username is required' });
+        }
+        const platforms = await userUpdationService.getUserPlatforms(username);
+        res.status(200).json(platforms);
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     syncUserSubmissions,
     syncDaily,
     syncContests,
     syncHeatmap,
     createUser,
-    addPlatformHandles
+    addPlatformHandles,
+    getUserPlatforms
 };

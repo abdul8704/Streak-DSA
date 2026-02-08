@@ -1,0 +1,11 @@
+{
+  "message": "Daily sync successful",
+  "stats": {
+    "maxStreak": 0,
+    "currentStreak": 0,
+    "highestSolved": 0
+  },
+  "recentSubmissions": 0,
+  "heatmapDays": 0,
+  "contests": 51
+}
