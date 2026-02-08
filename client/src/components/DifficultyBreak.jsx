@@ -1,16 +1,19 @@
 import React from 'react';
 import axios from 'axios';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
+import { useAuth } from '../context/AuthContext';
 
 const DifficultyBreak = () => {
+    const { user } = useAuth();
     const [stats, setStats] = React.useState([]);
     const [loading, setLoading] = React.useState(true);
 
     React.useEffect(() => {
         const fetchStats = async () => {
+            if (!user) return;
             try {
                 const response = await axios.post('http://localhost:5000/api/leetcode/solved', {
-                    username: "abdulaziz120"
+                    username: user.username
                 });
                 setStats(response.data);
                 setLoading(false);

@@ -40,8 +40,43 @@ const checkUserExists = async (username, email) => {
     }
 }
 
+
+const getUserByUsername = async (username) => {
+    try {
+        const query = `SELECT * FROM users WHERE username = ?`;
+        const [rows] = await pool.execute(query, [username]);
+        return rows[0];
+    } catch (err) {
+        console.error('Error fetching user by username', err);
+        throw err;
+    }
+};
+
+const updateUser = async (username, email, passwordHash) => {
+    try {
+        let query;
+        let params;
+
+        if (passwordHash) {
+            query = `UPDATE users SET email = ?, password_hash = ? WHERE username = ?`;
+            params = [email, passwordHash, username];
+        } else {
+            query = `UPDATE users SET email = ? WHERE username = ?`;
+            params = [email, username];
+        }
+
+        const [result] = await pool.execute(query, params);
+        return result;
+    } catch (err) {
+        console.error('Error updating user', err);
+        throw err;
+    }
+};
+
 module.exports = {
     insertUser,
     insertUserPlatform,
-    checkUserExists
+    checkUserExists,
+    getUserByUsername,
+    updateUser
 };

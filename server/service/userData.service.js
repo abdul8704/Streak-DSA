@@ -138,6 +138,7 @@ const getUserStats = async (username) => {
 
         // Calculate Solved Today
         const today = new Date();
+        today.setHours(0, 0, 0, 0); // Normalize today
         const y = today.getFullYear();
         const m = String(today.getMonth() + 1).padStart(2, '0');
         const d = String(today.getDate()).padStart(2, '0');
@@ -145,19 +146,45 @@ const getUserStats = async (username) => {
 
         const solvedToday = await userSubmissionQueries.getSolvedCountForDate(userId, todayStr);
 
-        if (!stats) {
-            return {
-                maxStreak: 0,
-                currentStreak: 0,
-                highestSolvedOneDay: solvedToday > 0 ? solvedToday : 0, // Should be at least solvedToday logic or just 0 from stats table default
-                solvedToday: solvedToday
-            };
+        // Calculate Current Streak Dynamically
+        const solvedDatesRaw = await userSubmissionQueries.getDistinctSolvedDates(userId);
+        // solvedDatesRaw is array of [{ solved_date: Date }, ... ] sorted DESC
+
+        const solvedDatesSet = new Set(solvedDatesRaw.map(row => {
+            const date = row.solved_date; // Date object
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${y}-${m}-${day}`;
+        }));
+
+        let currentStreak = 0;
+        let checkDate = new Date(today);
+
+        while (true) {
+            const y = checkDate.getFullYear();
+            const m = String(checkDate.getMonth() + 1).padStart(2, '0');
+            const day = String(checkDate.getDate()).padStart(2, '0');
+            const dateStr = `${y}-${m}-${day}`;
+
+            if (solvedDatesSet.has(dateStr)) {
+                currentStreak++;
+                checkDate.setDate(checkDate.getDate() - 1);
+            } else {
+                break;
+            }
+        }
+
+        // Use stored max streak, but checking if current > stored max (in case stats table is outdated)
+        let maxStreak = stats?.max_streak || 0;
+        if (currentStreak > maxStreak) {
+            maxStreak = currentStreak;
         }
 
         return {
-            maxStreak: stats.max_streak,
-            currentStreak: stats.current_streak,
-            highestSolvedOneDay: stats.highest_solved_one_day,
+            maxStreak: maxStreak,
+            currentStreak: currentStreak,
+            highestSolvedOneDay: stats?.highest_solved_one_day || solvedToday, // Fallback
             solvedToday: solvedToday
         };
     } catch (error) {

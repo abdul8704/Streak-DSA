@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { ChevronLeft, ChevronRight, Zap, Trophy, Target, TrendingUp } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 const StreakCalendar = () => {
+    const { user } = useAuth();
     const [currentDate, setCurrentDate] = useState(new Date());
 
     // State for solved days
@@ -16,113 +18,149 @@ const StreakCalendar = () => {
 
     useEffect(() => {
         const fetchData = async () => {
+            if (!user) return;
             try {
-                const response = await axios.post('http://localhost:5000/api/leetcode/daily', {
-                    username: "abdulaziz120"
-                });
-                const data = response.data;
+                const year = currentDate.getFullYear();
+                const month = currentDate.getMonth() + 1; // API expects 1-12
 
-                // Process solved days
+                // Fetch Calendar Data
+                const calendarResponse = await axios.get(`http://localhost:5000/api/user-data/${user.username}/streak`, {
+                    params: { month, year }
+                });
+                const calendarData = calendarResponse.data;
+
+                console.log(calendarData);
+
+                // Process solved days from calendarData
+                // calendarData format expected: { "YYYY-MM-DD": count, ... }
                 const newSolvedDays = new Set();
-                let todayCount = 0;
-                let max = 0;
-
-                const parsedDates = []; // Store timestamps
-
-                Object.entries(data).forEach(([dateStr, count]) => {
-                    const date = new Date(dateStr);
+                Object.entries(calendarData).forEach(([dateStr, count]) => {
                     if (count > 0) {
+                        // Parse dateStr "YYYY-MM-DD" to Date object to format as standard string if needed
+                        // But toDateString() depends on local time, and "YYYY-MM-DD" is usually UTC or local date literal.
+                        // Let's rely on standardizing.
+                        const parts = dateStr.split('-');
+                        const date = new Date(parts[0], parts[1] - 1, parts[2]);
                         newSolvedDays.add(date.toDateString());
-                        parsedDates.push(date.getTime());
-                    }
-
-                    if (count > max) max = count;
-
-                    // check if today
-                    const today = new Date();
-                    if (date.getDate() === today.getDate() &&
-                        date.getMonth() === today.getMonth() &&
-                        date.getFullYear() === today.getFullYear()) {
-                        console.log(`Matched today: ${dateStr} with count ${count}`);
-                        todayCount = count;
                     }
                 });
+                setSolvedDays(newSolvedDays);
 
-                // Calculate Streaks
-                parsedDates.sort((a, b) => a - b); // Ascending
 
-                let currentStreak = 0;
-                let longestStreak = 0;
-                let tempStreak = 0;
+                // Fetch All Time Graph Data for Stats
+                const statsResponse = await axios.get(`http://localhost:5000/api/user-data/${user.username}/graph`, {
+                    params: { range: 'all-time' }
+                });
+                const graphData = statsResponse.data; // Array of { date: "YYYY-MM-DD", count: number }
 
-                if (parsedDates.length > 0) {
-                    // Longest Streak
-                    tempStreak = 1;
-                    longestStreak = 1;
-                    for (let i = 1; i < parsedDates.length; i++) {
-                        const prev = new Date(parsedDates[i - 1]);
-                        const curr = new Date(parsedDates[i]);
+                // Calculate Stats
+                let calculatedStats = {
+                    currentStreak: 0,
+                    longestStreak: 0,
+                    todaySolved: 0,
+                    maxSolvedOneDay: 0
+                };
 
-                        // Check if consecutive (difference is approx 1 day)
-                        const diffTime = curr - prev;
-                        const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+                if (Array.isArray(graphData)) {
+                    // Sort data by date just in case
+                    const sortedData = [...graphData].sort((a, b) => new Date(a.date) - new Date(b.date));
 
-                        // Note: If multiple submissions on same day, diffDays is 0. 
-                        // But we filtered distinct dates earlier? 
-                        // actually new Date(dateStr) from "6 Feb 2026" creates unique timestamps per day.
+                    // 1. Max Solved One Day
+                    let maxSolved = 0;
+                    sortedData.forEach(item => {
+                        if (item.count > maxSolved) maxSolved = item.count;
+                    });
 
-                        if (diffDays === 1) {
-                            tempStreak++;
-                        } else if (diffDays > 1) {
-                            tempStreak = 1;
-                        }
-                        // If diffDays === 0 (same day), do nothing (streak continues effectively, but count doesn't increase)
+                    // 2. Today Solved
+                    const today = new Date();
+                    const y = today.getFullYear();
+                    const m = String(today.getMonth() + 1).padStart(2, '0');
+                    const d = String(today.getDate()).padStart(2, '0');
+                    const todayStr = `${y}-${m}-${d}`;
 
-                        if (tempStreak > longestStreak) longestStreak = tempStreak;
-                    }
+                    const todayEntry = sortedData.find(item => item.date === todayStr);
+                    const todayCount = todayEntry ? todayEntry.count : 0;
+
+                    // 3. Streaks
+                    // Create a Set of solved dates for O(1) lookup
+                    const solvedDatesSet = new Set(sortedData.filter(item => item.count > 0).map(item => item.date));
 
                     // Current Streak
-                    const today = new Date();
-                    const yesterday = new Date(today);
-                    yesterday.setDate(yesterday.getDate() - 1);
+                    let currentStreak = 0;
+                    let checkDate = new Date(today);
+                    // If today has no submissions, checking from yesterday might be valid for "active" streak in some definitions,
+                    // but user said "start from today... if not found break". 
+                    // However, legitimate streaks often allow "today not yet solved" if yesterday was solved.
+                    // BUT user instruction: "start from today, and find... if found increase... else break".
+                    // This implies if today is 0, streak is 0. 
+                    // Let's stick to the requested logic: Start today.
 
-                    // Check if last available data point is today or yesterday
-                    const lastDateTimestamp = parsedDates[parsedDates.length - 1];
-                    const lastDate = new Date(lastDateTimestamp);
+                    while (true) {
+                        const y = checkDate.getFullYear();
+                        const m = String(checkDate.getMonth() + 1).padStart(2, '0');
+                        const day = String(checkDate.getDate()).padStart(2, '0');
+                        const dateStr = `${y}-${m}-${day}`;
 
-                    const isToday = lastDate.getDate() === today.getDate() &&
-                        lastDate.getMonth() === today.getMonth() &&
-                        lastDate.getFullYear() === today.getFullYear();
+                        // Check if we have data for this date and count > 0
+                        // The graph data might be sparse (only days with submissions) or dense (all days).
+                        // API usually returns sparse for "solved" queries or distinct dates, but graph endpoint returns 'all' in range?
+                        // Let's rely on the set of dates where count > 0.
+                        if (solvedDatesSet.has(dateStr)) {
+                            currentStreak++;
+                            checkDate.setDate(checkDate.getDate() - 1);
+                        } else {
+                            // If today is 0, we break immediately -> streak 0.
+                            // If user wanted "streak includes yesterday if today is pending", they'd say check yesterday.
+                            // The instruction was explicit.
+                            break;
 
-                    const isYesterday = lastDate.getDate() === yesterday.getDate() &&
-                        lastDate.getMonth() === yesterday.getMonth() &&
-                        lastDate.getFullYear() === yesterday.getFullYear();
-
-                    if (isToday || isYesterday) {
-                        currentStreak = 1;
-                        for (let i = parsedDates.length - 2; i >= 0; i--) {
-                            const curr = new Date(parsedDates[i + 1]);
-                            const prev = new Date(parsedDates[i]);
-                            const diff = Math.round((curr - prev) / (1000 * 60 * 60 * 24));
-                            if (diff === 1) {
-                                currentStreak++;
-                            } else if (diff > 1) {
-                                break;
-                            }
+                            // Re-reading user instruction: "start from today... if found, increase... if not found, break"
+                            // If I haven't solved today, my streak is broken/0.
+                            // If I solved today, I check yesterday.
                         }
-                    } else {
-                        currentStreak = 0;
                     }
+
+                    // Longest Streak
+                    // We can iterate through the sorted data and count consecutive days.
+                    // Note: sortedData might be sparse. We need to check day differences.
+                    let longestStreak = 0;
+                    let tempStreak = 0;
+
+                    // Get only dates with > 0 solutions, sorted
+                    const activeDates = sortedData
+                        .filter(item => item.count > 0)
+                        .map(item => new Date(item.date).getTime())
+                        .sort((a, b) => a - b);
+
+                    if (activeDates.length > 0) {
+                        tempStreak = 1;
+                        longestStreak = 1;
+
+                        for (let i = 1; i < activeDates.length; i++) {
+                            const prev = activeDates[i - 1];
+                            const curr = activeDates[i];
+
+                            const diff = Math.round((curr - prev) / (1000 * 60 * 60 * 24));
+
+                            if (diff === 1) {
+                                tempStreak++;
+                            } else if (diff > 1) {
+                                tempStreak = 1;
+                            }
+
+                            if (tempStreak > longestStreak) longestStreak = tempStreak;
+                        }
+                    }
+
+                    calculatedStats = {
+                        currentStreak,
+                        longestStreak,
+                        todaySolved: todayCount,
+                        maxSolvedOneDay: maxSolved
+                    };
                 }
 
-                setSolvedDays(newSolvedDays);
-                setStats(prev => ({
-                    ...prev,
-                    currentStreak,
-                    longestStreak,
-                    todaySolved: todayCount,
-                    maxSolvedOneDay: max
-                }));
+                setStats(calculatedStats);
 
             } catch (error) {
                 console.error("Error fetching streak data:", error);
@@ -130,7 +168,7 @@ const StreakCalendar = () => {
         };
 
         fetchData();
-    }, []);
+    }, [user, currentDate]);
 
     const handlePrevMonth = () => {
         setCurrentDate(prev => {

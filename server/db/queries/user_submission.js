@@ -175,6 +175,22 @@ const getSolvedCountForDate = async (userId, dateStr) => {
     }
 }
 
+const getDistinctSolvedDates = async (userId) => {
+    try {
+        const query = `
+            SELECT DISTINCT DATE(solved_at) as solved_date 
+            FROM user_solved_problems 
+            WHERE user_id = ? 
+            ORDER BY solved_date DESC
+        `;
+        const [rows] = await pool.execute(query, [userId]);
+        return rows;
+    } catch (err) {
+        console.error('Error fetching distinct solved dates', err);
+        throw err;
+    }
+}
+
 module.exports = {
     insertUserSolvedProblem,
     insertUserHeatmap,
@@ -186,5 +202,6 @@ module.exports = {
     getUserHeatmap,
     getSolvedProblemsCountByDate,
     getUserStreakStats,
-    getSolvedCountForDate
+    getSolvedCountForDate,
+    getDistinctSolvedDates
 };

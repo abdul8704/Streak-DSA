@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { useAuth } from '../context/AuthContext';
 
 const sampleData = [
     { date: "Jan 20", solved: 2 },
@@ -20,29 +21,38 @@ const sampleData = [
 ];
 
 const SolvedGraph = () => {
+    const { user } = useAuth();
     const [data, setData] = useState([]);
+    const [range, setRange] = useState('last-7-days');
 
     useEffect(() => {
         const fetchData = async () => {
+            if (!user) return;
             try {
-                const response = await axios.post('http://localhost:5000/api/leetcode/daily', {
-                    username: "abdulaziz120"
+                const response = await axios.get(`http://localhost:5000/api/user-data/${user.username}/graph`, {
+                    params: { range }
                 });
-                const data = response.data;
-
-                const processedData = Object.entries(data).map(([dateStr, count]) => {
-                    const date = new Date(dateStr);
-                    // Format: "Jan 20"
-                    const month = date.toLocaleString('default', { month: 'short' });
-                    const day = date.getDate().toString().padStart(2, '0');
-                    return {
-                        date: `${month} ${day}`,
-                        solved: count,
-                        timestamp: date.getTime()
-                    };
-                })
-                    .sort((a, b) => a.timestamp - b.timestamp)
-                    .slice(-14); // Last 14 days
+                const apiData = response.data;
+                // Assuming apiData is array of { date, count } or similar.
+                // If it needs processing, we do it here.
+                // Assuming backend returns ready-to-use data for recharts or we map it.
+                // Using previous logic structure if backend returns raw dictionary:
+console.log(apiData);
+                let processedData = [];
+                if (Array.isArray(apiData)) {
+                    processedData = apiData;
+                } else if (typeof apiData === 'object') {
+                    processedData = Object.entries(apiData).map(([dateStr, count]) => {
+                        const date = new Date(dateStr);
+                        const month = date.toLocaleString('default', { month: 'short' });
+                        const day = date.getDate().toString().padStart(2, '0');
+                        return {
+                            date: `${month} ${day}`,
+                            solved: count,
+                            timestamp: date.getTime()
+                        };
+                    }).sort((a, b) => a.timestamp - b.timestamp);
+                }
 
                 setData(processedData);
             } catch (error) {
@@ -51,11 +61,24 @@ const SolvedGraph = () => {
         };
 
         fetchData();
-    }, []);
+    }, [user, range]);
 
     return (
         <div className="bg-card p-6 rounded-xl shadow-sm border border-border h-full flex flex-col transition-colors">
-            <h2 className="text-lg font-bold mb-4 text-primary">Activity (Last 14 Days)</h2>
+            <div className="flex justify-between items-center mb-4">
+                <h2 className="text-lg font-bold text-primary">Activity</h2>
+                <select
+                    value={range}
+                    onChange={(e) => setRange(e.target.value)}
+                    className="bg-card-hover text-sm border border-border rounded-md px-2 py-1 outline-none focus:ring-1 focus:ring-primary"
+                >
+                    <option value="last-7-days">Last 7 Days</option>
+                    <option value="last-30-days">Last 30 Days</option>
+                    <option value="last-90-days">Last 90 Days</option>
+                    <option value="all-time">All Time</option>
+                </select>
+            </div>
+
             <div className="flex-1 w-full min-h-[px]">
                 <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={data}>
@@ -65,7 +88,7 @@ const SolvedGraph = () => {
                             axisLine={false}
                             tickLine={false}
                             tick={{ fontSize: 12, fill: 'var(--text-secondary)' }}
-                            interval={2}
+                            interval={range === 'last 90 days' || range === 'all time' ? 5 : 2}
                         />
                         <YAxis
                             axisLine={false}
@@ -84,7 +107,7 @@ const SolvedGraph = () => {
                         />
                         <Line
                             type="monotone"
-                            dataKey="solved"
+                            dataKey="count"
                             stroke="var(--text-accent)"
                             strokeWidth={3}
                             dot={{ r: 4, strokeWidth: 2, fill: 'var(--bg-card)', stroke: 'var(--text-accent)' }}

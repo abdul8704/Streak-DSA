@@ -1,6 +1,7 @@
 import React from 'react';
 import axios from 'axios';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { useAuth } from '../context/AuthContext';
 
 const data = [
     { date: "Week 1", leetcode: 1500, codeforces: 1200, atcoder: 900 },
@@ -14,12 +15,14 @@ const data = [
 ];
 
 const ContestGraph = () => {
+    const { user } = useAuth();
     const [platform, setPlatform] = React.useState('leetcode');
     const [data, setData] = React.useState([]);
     const [loading, setLoading] = React.useState(false);
 
     React.useEffect(() => {
         const fetchData = async () => {
+            if (!user) return;
             setLoading(true);
             try {
                 // Determine color based on platform for the single line
@@ -27,20 +30,25 @@ const ContestGraph = () => {
                 if (platform === 'codeforces') color = '#3b82f6';
                 if (platform === 'atcoder') color = '#ef4444';
 
-                const response = await axios.post(`http://localhost:5000/api/${platform}/contest`, {
-                    username: "abdulaziz120"
-                });
+                // Use the user-data endpoint as requested
+                const response = await axios.get(`http://localhost:5000/api/user-data/${user.username}/contests`);
 
                 const rawData = response.data;
 
                 // Process data: map to simple array for Recharts
                 // Expecting array of objects with { contest: { title }, rating, ... }
                 // We'll map to { name: title, value: rating }
-                const processedData = rawData.map(item => ({
-                    name: item.contest.title,
-                    value: item.rating,
-                    tooltipInfo: item // store full item for custom tooltip if needed
-                }));
+                const processedData = rawData.map(item => {
+                    const date = new Date(item.contest_date);
+                    // Format date as "MMM DD, YYYY" or similar
+                    const formattedDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                    return {
+                        name: formattedDate,
+                        timestamp: date.getTime(), // for sorting
+                        value: item.rating,
+                        tooltipInfo: item
+                    };
+                }).sort((a, b) => a.timestamp - b.timestamp);
 
                 setData(processedData);
             } catch (error) {

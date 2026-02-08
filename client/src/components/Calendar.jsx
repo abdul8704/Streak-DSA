@@ -1,17 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import { useAuth } from '../context/AuthContext';
 
 const Calendar = () => {
+    const { user } = useAuth();
     const [calendarData, setCalendarData] = useState([]);
 
     useEffect(() => {
         const fetchData = async () => {
+            if (!user) return;
             try {
-                const response = await axios.post('http://localhost:5000/api/leetcode/heatmap', {
-                    username: "abdulaziz120"
-                });
+                const response = await axios.get(`http://localhost:5000/api/user-data/${user.username}/heatmap`);
                 const apiData = response.data;
-
+            
                 const today = new Date();
                 const startDate = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000);
 
@@ -34,11 +35,11 @@ const Calendar = () => {
                         if (isBeforeStart || isAfterToday) {
                             days.push({ day: d, intensity: -1 });
                         } else {
-                            // Construct date key "D MMM YYYY"
-                            const dayStr = d;
-                            const monthStr = currentDate.toLocaleString('default', { month: 'short' });
+                            // Construct date key "YYYY-MM-DD"
+                            const dayStr = String(d).padStart(2, '0');
+                            const monthStr = String(month + 1).padStart(2, '0');
                             const yearStr = year;
-                            const dateKey = `${dayStr} ${monthStr} ${yearStr}`;
+                            const dateKey = `${yearStr}-${monthStr}-${dayStr}`;
 
                             const count = apiData[dateKey] || 0;
 
