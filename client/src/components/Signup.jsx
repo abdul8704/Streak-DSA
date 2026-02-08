@@ -53,7 +53,7 @@ const Signup = () => {
             // Auto login after verification
             const loginResult = await login(formData.username, formData.password);
             if (loginResult.success) {
-                navigate('/dashboard');
+                navigate('/profile');
             } else {
                 // If login fails but verification succeeded, send to login page
                 navigate('/login');
