@@ -57,19 +57,29 @@ const getStreakCalendarData = async (username, month, year) => {
         const daysInMonth = new Date(startY, startM, 0).getDate();
         const endStr = `${startY}-${String(startM).padStart(2, '0')}-${daysInMonth}`;
 
-        const data = await userSubmissionQueries.getSolvedProblemsCountByDate(userId, startStr, endStr);
 
-        const result = {};
-        data.forEach(row => {
-            let dateStr = row.date;
-            if (row.date instanceof Date) {
-                const y = row.date.getFullYear();
-                const m = String(row.date.getMonth() + 1).padStart(2, '0');
-                const d = String(row.date.getDate()).padStart(2, '0');
-                dateStr = `${y}-${m}-${d}`;
-            }
-            result[dateStr] = row.count_of_solved;
-        });
+        const result = {}
+        for (let date = 1; date <= daysInMonth; date++) {
+            // Use Date objects to safely handle month/year rollovers
+            const currentDay = new Date(startY, startM - 1, date);
+            const nextDay = new Date(startY, startM - 1, date + 1);
+
+            const formatDate = (d) => {
+                const y = d.getFullYear();
+                const m = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                return `${y}-${m}-${day} 05:30:00`;
+            };
+
+            const startStr = formatDate(currentDay);
+            const endStr = formatDate(nextDay);
+
+            let dateStr = startStr.split(' ')[0];
+            let row = await userSubmissionQueries.getSolvedCountNew(userId, startStr, endStr);
+            result[dateStr] = row[0].count_of_solved;
+        }
+
+        console.log(result)
         return result;
 
     } catch (error) {
@@ -111,19 +121,55 @@ const getProblemsSolvedGraphData = async (username, range) => {
 
         const data = await userSubmissionQueries.getSolvedProblemsCountByDate(userId, startDate, endStr);
 
-        return data.map(row => {
-            let dateStr = row.date instanceof Date ? row.date : row.date;
+        const dataMap = new Map();
+        data.forEach(row => {
+            let dateStr = row.date;
             if (row.date instanceof Date) {
                 const y = row.date.getFullYear();
                 const m = String(row.date.getMonth() + 1).padStart(2, '0');
                 const d = String(row.date.getDate()).padStart(2, '0');
                 dateStr = `${y}-${m}-${d}`;
             }
-            return {
-                date: dateStr,
-                count: row.count_of_solved
-            };
+            dataMap.set(dateStr, row.count_of_solved);
         });
+
+        let loopDate;
+        if (startDate) {
+            const [sy, sm, sd] = startDate.split('-').map(Number);
+            loopDate = new Date(sy, sm - 1, sd);
+        } else if (data.length > 0) {
+            let start = data[0].date;
+            if (start instanceof Date) {
+                loopDate = new Date(start);
+            } else {
+                loopDate = new Date(start);
+            }
+        } else {
+            return [];
+        }
+
+        // Normalize time to midnight
+        loopDate.setHours(0, 0, 0, 0);
+
+        const finalDate = new Date(endDate);
+        finalDate.setHours(0, 0, 0, 0);
+
+        const result = [];
+        while (loopDate <= finalDate) {
+            const y = loopDate.getFullYear();
+            const m = String(loopDate.getMonth() + 1).padStart(2, '0');
+            const d = String(loopDate.getDate()).padStart(2, '0');
+            const dateStr = `${y}-${m}-${d}`;
+
+            result.push({
+                date: dateStr,
+                count: dataMap.get(dateStr) || 0
+            });
+
+            loopDate.setDate(loopDate.getDate() + 1);
+        }
+
+        return result;
 
     } catch (error) {
         console.error('Error fetching solved problems graph data:', error);

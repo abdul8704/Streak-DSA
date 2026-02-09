@@ -126,6 +126,19 @@ const getUserIdByUsername = async (username) => {
     }
 }
 
+const getSolvedCountNew = async (userId, startDate, endDate) => {
+    try {
+        console.log(startDate + "---" + endDate);
+        let query = `SELECT COUNT(*) as count_of_solved FROM user_solved_problems WHERE user_id = ? AND solved_at >= ? AND solved_at <= ? `
+        const params = [userId, startDate, endDate];
+        const [rows] = await pool.execute(query, params);
+        return rows;
+    } catch (err) {
+        console.error('Error fetching solved problems count by date', err);
+        throw err;
+    }
+}
+
 const getSolvedProblemsCountByDate = async (userId, startDate, endDate) => {
     try {
         let query = `
@@ -134,7 +147,6 @@ const getSolvedProblemsCountByDate = async (userId, startDate, endDate) => {
             WHERE user_id = ?
         `;
         const params = [userId];
-
         if (startDate && endDate) {
             query += ' AND DATE(solved_at) BETWEEN ? AND ?';
             params.push(startDate, endDate);
@@ -203,5 +215,6 @@ module.exports = {
     getSolvedProblemsCountByDate,
     getUserStreakStats,
     getSolvedCountForDate,
-    getDistinctSolvedDates
+    getDistinctSolvedDates,
+    getSolvedCountNew
 };
